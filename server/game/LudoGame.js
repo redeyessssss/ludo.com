@@ -1,11 +1,11 @@
-// Professional Ludo Game Engine
+// Standard Ludo Game Engine - Following Official Rules
 const COLORS = ['red', 'blue', 'green', 'yellow'];
 const TOKENS_PER_PLAYER = 4;
 const BOARD_PATH_LENGTH = 52;
 const FINISH_AREA_LENGTH = 6;
 const TOTAL_POSITIONS = BOARD_PATH_LENGTH + FINISH_AREA_LENGTH;
 
-// Safe positions on the board
+// Safe positions on the board (marked with stars)
 const SAFE_POSITIONS = [0, 8, 13, 21, 26, 34, 39, 47];
 
 class LudoGameEngine {
@@ -105,7 +105,7 @@ class LudoGameEngine {
       token.position += this.diceValue;
     }
 
-    // Check for captures (only on main path, not in finish area)
+    // Check for captures (only on main path, not in finish area or safe spots)
     if (token.position < BOARD_PATH_LENGTH && !this.isSafePosition(token.position)) {
       const capturedTokens = this.checkCaptures(playerId, token.position);
       captured.push(...capturedTokens);
@@ -197,6 +197,7 @@ class LudoGameEngine {
       if (opponentId === playerId) return;
       
       this.tokens[opponentId].tokens.forEach((token, index) => {
+        // Capture only if opponent token is on same position and not in home or safe spot
         if (token.position === position && !token.isHome && !this.isSafePosition(position)) {
           token.position = -1;
           token.isHome = true;
@@ -210,6 +211,7 @@ class LudoGameEngine {
   }
 
   checkWin(playerId) {
+    // All 4 tokens must reach finish area (positions 52-57)
     return this.tokens[playerId].tokens.every(
       token => token.position >= TOTAL_POSITIONS
     );
