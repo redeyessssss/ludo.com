@@ -19,10 +19,24 @@ export default function Lobby() {
       return;
     }
 
-    const newSocket = io('http://localhost:3001');
+    const newSocket = io('http://localhost:3001', {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5,
+      timeout: 20000,
+    });
+    
     setSocket(newSocket);
 
-    newSocket.emit('room:join', { roomId, user });
+    newSocket.on('connect', () => {
+      console.log('✅ Connected to lobby');
+      newSocket.emit('room:join', { roomId, user });
+    });
+
+    newSocket.on('connect_error', (error) => {
+      console.error('❌ Connection error:', error.message);
+    });
 
     newSocket.on('room:update', (data) => {
       setRoom(data.room);

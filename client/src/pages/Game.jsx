@@ -21,10 +21,24 @@ export default function Game() {
       return;
     }
 
-    const newSocket = io('http://localhost:3001');
+    const newSocket = io('http://localhost:3001', {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5,
+      timeout: 20000,
+    });
+    
     setSocket(newSocket);
 
-    newSocket.emit('game:join', { gameId, userId: user.id });
+    newSocket.on('connect', () => {
+      console.log('✅ Connected to game');
+      newSocket.emit('game:join', { gameId, userId: user.id });
+    });
+
+    newSocket.on('connect_error', (error) => {
+      console.error('❌ Connection error:', error.message);
+    });
 
     newSocket.on('game:state', (data) => {
       setGameState(data);

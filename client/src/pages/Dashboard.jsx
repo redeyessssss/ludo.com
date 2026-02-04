@@ -7,18 +7,40 @@ export default function Dashboard() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
   const [socket, setSocket] = useState(null);
-  const [stats, setStats] = useState(null);
   const [onlinePlayers, setOnlinePlayers] = useState(0);
   const [playersInQueue, setPlayersInQueue] = useState({ quick: 0, ranked: 0 });
   const [searching, setSearching] = useState(false);
   const [searchMode, setSearchMode] = useState('');
   const [queuePosition, setQueuePosition] = useState(0);
+  const [connectionStatus, setConnectionStatus] = useState('connecting');
 
   useEffect(() => {
-    const newSocket = io('http://localhost:3001');
+    const newSocket = io('http://localhost:3001', {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5,
+      timeout: 20000,
+    });
+    
     setSocket(newSocket);
 
-    newSocket.emit('user:online', user);
+    newSocket.on('connect', () => {
+      console.log('✅ Connected to server');
+      setConnectionStatus('connected');
+      newSocket.emit('user:online', user);
+    });
+
+    newSocket.on('connect_error', (error) => {
+      console.error('❌ Connection error:', error.message);
+      console.log('💡 Tip: Disable ad blockers or browser extensions that might block WebSocket connections');
+      setConnectionStatus('error');
+    });
+
+    newSocket.on('disconnect', (reason) => {
+      console.log('Disconnected:', reason);
+      setConnectionStatus('disconnected');
+    });
     
     newSocket.on('stats:update', (data) => {
       setOnlinePlayers(data.onlinePlayers);
@@ -98,6 +120,39 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen px-4 py-8">
       <div className="max-w-6xl mx-auto">
+        {/* Connection Status Banner */}
+        {connectionStatus !== 'connected' && (
+          <div className={`mb-4 p-4 rounded-lg ${
+            connectionStatus === 'error' ? 'bg-red-100 border-2 border-red-500' : 'bg-yellow-100 border-2 border-yellow-500'
+          }`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                {connectionStatus === 'connecting' && (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-yellow-600"></div>
+                    <span className="font-semibold text-yellow-800">Connecting to server...</span>
+                  </>
+                )}
+                {connectionStatus === 'error' && (
+                  <>
+                    <span className="text-2xl">⚠️</span>
+                    <div>
+                      <p className="font-semibold text-red-800">Connection blocked</p>
+                      <p className="text-sm text-red-700">Please disable ad blockers or browser extensions blocking WebSocket connections</p>
+                    </div>
+                  </>
+                )}
+                {connectionStatus === 'disconnected' && (
+                  <>
+                    <span className="text-2xl">🔌</span>
+                    <span className="font-semibold text-yellow-800">Disconnected - Reconnecting...</span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Searching Modal */}
         {searching && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
