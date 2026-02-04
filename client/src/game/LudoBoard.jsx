@@ -98,6 +98,20 @@ export default function LudoBoard({ gameState, onTokenClick, onDiceRoll, current
     }
   };
 
+  // Calculate path positions for visualization
+  const getPathPositions = () => {
+    const positions = [];
+    // Main track positions (simplified for visualization)
+    for (let i = 0; i < 52; i++) {
+      const angle = (i / 52) * Math.PI * 2;
+      const radius = 35;
+      const x = 50 + radius * Math.cos(angle);
+      const y = 50 + radius * Math.sin(angle);
+      positions.push({ x, y });
+    }
+    return positions;
+  };
+
   return (
     <div className="w-full">
       {/* SVG Board */}

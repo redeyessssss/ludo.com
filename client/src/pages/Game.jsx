@@ -98,35 +98,35 @@ export default function Game() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-4 md:p-8">
       {/* Header */}
-      <div className="max-w-7xl mx-auto mb-6">
-        <div className="flex justify-between items-center mb-6 animate-fade-in-up">
+      <div className="max-w-7xl mx-auto mb-4 md:mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 md:gap-6 mb-4 md:mb-6 animate-fade-in-up">
           <div>
-            <h1 className="text-4xl md:text-5xl font-bold text-white mb-2 flex items-center">
+            <h1 className="text-3xl md:text-5xl font-bold text-white mb-1 md:mb-2 flex flex-wrap items-center gap-2">
               🎲 Ludo Game
-              {isCurrentPlayer && <span className="ml-4 text-2xl animate-pulse">🎯 Your Turn!</span>}
+              {isCurrentPlayer && <span className="text-xl md:text-2xl animate-pulse">🎯 Your Turn!</span>}
             </h1>
-            <p className="text-blue-200">Current Player: <span className="font-bold text-white">{gameState?.currentPlayer?.username}</span></p>
+            <p className="text-sm md:text-base text-blue-200">Current Player: <span className="font-bold text-white">{gameState?.currentPlayer?.username}</span></p>
           </div>
           <button
             onClick={() => navigate('/dashboard')}
-            className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-lg transition-all duration-300 hover:scale-105 active:scale-95"
+            className="px-4 md:px-6 py-2 md:py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-lg transition-all duration-300 hover:scale-105 active:scale-95 text-sm md:text-base w-full sm:w-auto"
           >
             ← Back
           </button>
         </div>
 
         {/* Main Game Container */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Game Board - Takes 3 columns */}
-          <div className="lg:col-span-3">
-            <div className="bg-white rounded-2xl shadow-2xl p-6 animate-scale-in">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6">
+          {/* Game Board - Takes 3 columns on desktop, full width on mobile */}
+          <div className="lg:col-span-3 w-full">
+            <div className="bg-white rounded-2xl shadow-2xl p-4 md:p-6 animate-scale-in">
               {/* Dice Section */}
-              <div className="mb-8 text-center">
-                <h2 className="text-2xl font-bold text-gray-800 mb-4">🎲 Roll the Dice</h2>
-                <div className="flex justify-center items-center gap-4 mb-6">
+              <div className="mb-6 md:mb-8 text-center">
+                <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-3 md:mb-4">🎲 Roll the Dice</h2>
+                <div className="flex flex-col sm:flex-row justify-center items-center gap-3 md:gap-4 mb-4 md:mb-6">
                   {/* Dice Display */}
                   <div
-                    className={`w-24 h-24 bg-gradient-to-br from-yellow-300 to-yellow-500 rounded-2xl shadow-2xl flex items-center justify-center text-6xl font-bold text-white cursor-pointer transition-all duration-300 ${
+                    className={`w-20 h-20 md:w-24 md:h-24 bg-gradient-to-br from-yellow-300 to-yellow-500 rounded-2xl shadow-2xl flex items-center justify-center text-4xl md:text-6xl font-bold text-white cursor-pointer transition-all duration-300 ${
                       showDiceAnimation ? 'animate-dice-roll' : ''
                     } ${isCurrentPlayer ? 'hover:scale-110 hover:shadow-3xl' : 'opacity-50'}`}
                     onClick={handleRollDice}
@@ -138,7 +138,7 @@ export default function Game() {
                   <button
                     onClick={handleRollDice}
                     disabled={rolling || !isCurrentPlayer}
-                    className={`px-8 py-4 rounded-xl font-bold text-lg transition-all duration-300 transform ${
+                    className={`px-6 md:px-8 py-3 md:py-4 rounded-xl font-bold text-base md:text-lg transition-all duration-300 transform w-full sm:w-auto ${
                       isCurrentPlayer && !rolling
                         ? 'bg-gradient-to-r from-green-400 to-green-600 text-white hover:scale-105 active:scale-95 shadow-lg hover:shadow-2xl'
                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
@@ -149,9 +149,9 @@ export default function Game() {
                 </div>
 
                 {/* Instructions */}
-                <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4 text-left">
+                <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-3 md:p-4 text-left text-sm md:text-base">
                   <p className="text-gray-700 font-semibold mb-2">📋 How to Play:</p>
-                  <ul className="text-sm text-gray-600 space-y-1">
+                  <ul className="text-xs md:text-sm text-gray-600 space-y-1">
                     <li>✓ Click "Roll Dice" when it's your turn</li>
                     <li>✓ Click on your tokens to move them</li>
                     <li>✓ Reach the center to win!</li>
@@ -161,7 +161,7 @@ export default function Game() {
               </div>
 
               {/* Game Board */}
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 shadow-inner">
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-2 md:p-4 shadow-inner">
                 <LudoBoard
                   gameState={gameState}
                   onTokenClick={handleTokenClick}
@@ -173,17 +173,17 @@ export default function Game() {
           </div>
 
           {/* Right Sidebar - Players & Chat */}
-          <div className="lg:col-span-1 space-y-6">
+          <div className="lg:col-span-1 space-y-4 md:space-y-6 w-full">
             {/* Players Info */}
-            <div className="bg-white rounded-2xl shadow-2xl p-6 animate-slide-in-right">
-              <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+            <div className="bg-white rounded-2xl shadow-2xl p-4 md:p-6 animate-slide-in-right">
+              <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-3 md:mb-4 flex items-center">
                 👥 Players
               </h3>
-              <div className="space-y-3">
-                {gameState?.players?.map((player, idx) => (
+              <div className="space-y-2 md:space-y-3">
+                {gameState?.players?.map((player) => (
                   <div
                     key={player.id}
-                    className={`p-3 rounded-lg transition-all duration-300 ${
+                    className={`p-2 md:p-3 rounded-lg transition-all duration-300 ${
                       gameState?.currentPlayer?.id === player.id
                         ? 'bg-yellow-100 border-2 border-yellow-400 scale-105'
                         : 'bg-gray-100 border-2 border-gray-200'
@@ -191,7 +191,7 @@ export default function Game() {
                   >
                     <div className="flex items-center gap-2">
                       <div
-                        className="w-4 h-4 rounded-full"
+                        className="w-3 h-3 md:w-4 md:h-4 rounded-full"
                         style={{
                           background: gameState?.tokens?.[player.id]?.color
                             ? `linear-gradient(135deg, ${
@@ -212,7 +212,7 @@ export default function Game() {
                             : '#ccc',
                         }}
                       />
-                      <span className="font-semibold text-gray-800">{player.username}</span>
+                      <span className="font-semibold text-gray-800 text-sm md:text-base truncate">{player.username}</span>
                       {gameState?.currentPlayer?.id === player.id && (
                         <span className="ml-auto text-lg animate-bounce">🎯</span>
                       )}
@@ -223,14 +223,14 @@ export default function Game() {
             </div>
 
             {/* Chat */}
-            <div className="bg-white rounded-2xl shadow-2xl p-6 flex flex-col h-80 animate-slide-in-right" style={{ animationDelay: '0.1s' }}>
-              <h3 className="text-xl font-bold text-gray-800 mb-4">💬 Chat</h3>
-              <div className="flex-1 overflow-y-auto mb-4 space-y-2 bg-gray-50 rounded-lg p-3">
+            <div className="bg-white rounded-2xl shadow-2xl p-4 md:p-6 flex flex-col h-64 md:h-80 animate-slide-in-right" style={{ animationDelay: '0.1s' }}>
+              <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-3 md:mb-4">💬 Chat</h3>
+              <div className="flex-1 overflow-y-auto mb-3 md:mb-4 space-y-2 bg-gray-50 rounded-lg p-2 md:p-3">
                 {chatMessages.length === 0 ? (
-                  <p className="text-gray-400 text-sm text-center py-8">No messages yet...</p>
+                  <p className="text-gray-400 text-xs md:text-sm text-center py-8">No messages yet...</p>
                 ) : (
                   chatMessages.map((msg, idx) => (
-                    <div key={idx} className="text-sm">
+                    <div key={idx} className="text-xs md:text-sm">
                       <span className="font-semibold text-blue-600">{msg.username}:</span>
                       <span className="text-gray-700 ml-2">{msg.message}</span>
                     </div>
@@ -244,11 +244,11 @@ export default function Game() {
                   onChange={(e) => setMessage(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                   placeholder="Type message..."
-                  className="flex-1 px-3 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 transition-colors"
+                  className="flex-1 px-2 md:px-3 py-2 border-2 border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 transition-colors"
                 />
                 <button
                   onClick={handleSendMessage}
-                  className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold transition-all duration-300 hover:scale-105 active:scale-95"
+                  className="px-3 md:px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold text-sm transition-all duration-300 hover:scale-105 active:scale-95"
                 >
                   Send
                 </button>
@@ -256,9 +256,9 @@ export default function Game() {
             </div>
 
             {/* Game Stats */}
-            <div className="bg-white rounded-2xl shadow-2xl p-6 animate-slide-in-right" style={{ animationDelay: '0.2s' }}>
-              <h3 className="text-xl font-bold text-gray-800 mb-4">📊 Stats</h3>
-              <div className="space-y-3 text-sm">
+            <div className="bg-white rounded-2xl shadow-2xl p-4 md:p-6 animate-slide-in-right" style={{ animationDelay: '0.2s' }}>
+              <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-3 md:mb-4">📊 Stats</h3>
+              <div className="space-y-2 md:space-y-3 text-xs md:text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Game ID:</span>
                   <span className="font-mono text-gray-800 text-xs">{gameId?.slice(0, 8)}...</span>
