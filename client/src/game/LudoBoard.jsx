@@ -169,9 +169,14 @@ export default function LudoBoard({ gameState, onTokenClick, onDiceRoll, current
           return playerTokens.tokens.map((token, index) => {
             let pos;
             if (token.isHome) {
-              pos = homePositions[color][index];
+              pos = homePositions[color]?.[index] || { x: 50, y: 50 };
             } else {
               // Simplified: just show in center for now
+              pos = { x: 50, y: 50 };
+            }
+
+            // Safety check
+            if (!pos || typeof pos.x === 'undefined' || typeof pos.y === 'undefined') {
               pos = { x: 50, y: 50 };
             }
 
