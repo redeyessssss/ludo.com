@@ -6,7 +6,14 @@
 
 If you see `ERR_BLOCKED_BY_CLIENT` errors in the browser console, this means a browser extension is blocking the WebSocket connection.
 
-**Common causes:**
+**✅ FIXED**: The app now uses HTTP polling as the primary transport, which works even with ad blockers enabled!
+
+**How it works:**
+1. App connects using HTTP polling (not blocked by ad blockers)
+2. Once connected, it automatically upgrades to WebSocket if available
+3. If WebSocket is blocked, it stays on polling (still works perfectly!)
+
+**Common causes of blocking:**
 - Ad blockers (uBlock Origin, AdBlock Plus, etc.)
 - Privacy extensions (Privacy Badger, Ghostery, etc.)
 - VPN extensions
@@ -14,17 +21,21 @@ If you see `ERR_BLOCKED_BY_CLIENT` errors in the browser console, this means a b
 
 **Solutions:**
 
-1. **Disable ad blockers temporarily**
+1. **Just refresh the page!**
+   - The app now uses HTTP polling by default
+   - Should work even with ad blockers enabled
+   - No need to disable extensions!
+
+2. **If still having issues, disable ad blockers temporarily**
    - Click the extension icon in your browser
    - Disable it for `localhost:5173` and `localhost:3001`
    - Refresh the page
-
-2. **Whitelist localhost in your ad blocker**
+3. **Whitelist localhost in your ad blocker**
    - Open your ad blocker settings
    - Add `localhost` or `127.0.0.1` to the whitelist
    - Save and refresh
 
-3. **Try a different browser**
+4. **Try a different browser**
    - Chrome/Edge without extensions
    - Firefox in private mode
    - Safari
@@ -34,6 +45,12 @@ If you see `ERR_BLOCKED_BY_CLIENT` errors in the browser console, this means a b
    - Look for connection status messages:
      - ✅ "Connected to server" = Working!
      - ❌ "Connection error" = Check extensions
+
+5. **Test connection manually**
+   - Open `test-connection.html` in your browser
+   - Click "Test Polling Only" to verify HTTP polling works
+   - Click "Test WebSocket Only" to check if WebSocket is blocked
+   - Click "Test Both" to see the automatic upgrade process
 
 ### Connection Status Indicator
 
@@ -69,9 +86,11 @@ PORT=3002
 
 ## WebSocket Transport
 
-The app now uses both WebSocket and polling transports for better compatibility:
-- **WebSocket**: Fast, real-time (preferred)
-- **Polling**: Fallback if WebSocket is blocked
+The app now uses **polling-first strategy** for better compatibility:
+- **HTTP Polling** (primary): Works with all ad blockers and extensions
+- **WebSocket** (upgrade): Automatically upgrades if not blocked
+
+This means the app will work even if WebSocket is completely blocked!
 
 ## Still Having Issues?
 

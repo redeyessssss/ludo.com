@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Socket.io Connection Test</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .status {
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-size: 18px;
+        }
+        .connecting { background: #fff3cd; color: #856404; }
+        .connected { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .log {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .log-entry {
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 5px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background: #007bff;
+            color: white;
+        }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>🎲 Ludo.com Connection Test</h1>
+    
+    <div id="status" class="status connecting">
+        🔄 Connecting to server...
+    </div>
+
+    <div>
+        <button onclick="testPollingOnly()">Test Polling Only</button>
+        <button onclick="testWebSocketOnly()">Test WebSocket Only</button>
+        <button onclick="testBoth()">Test Both (Auto)</button>
+    </div>
+
+    <h3>Connection Log:</h3>
+    <div id="log" class="log"></div>
+
+    <script>
+        let socket = null;
+        const statusDiv = document.getElementById('status');
+        const logDiv = document.getElementById('log');
+
+        function addLog(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            const timestamp = new Date().toLocaleTimeString();
+            const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+            entry.innerHTML = `<strong>[${timestamp}]</strong> ${icon} ${message}`;
+            logDiv.insertBefore(entry, logDiv.firstChild);
+        }
+
+        function updateStatus(message, className) {
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${className}`;
+        }
+
+        function connectSocket(transports) {
+            if (socket) {
+                socket.close();
+            }
+
+            addLog(`Attempting connection with transports: [${transports.join(', ')}]`);
+            
+            socket = io('http://localhost:3001', {
+                transports: transports,
+                reconnection: true,
+                reconnectionDelay: 1000,
+                reconnectionAttempts: 3,
+                timeout: 10000,
+            });
+
+            socket.on('connect', () => {
+                updateStatus('✅ Connected to server!', 'connected');
+                addLog(`Connected successfully using ${socket.io.engine.transport.name}`, 'success');
+                addLog(`Socket ID: ${socket.id}`, 'success');
+            });
+
+            socket.on('connect_error', (error) => {
+                updateStatus('❌ Connection failed', 'error');
+                addLog(`Connection error: ${error.message}`, 'error');
+            });
+
+            socket.on('disconnect', (reason) => {
+                updateStatus('🔌 Disconnected', 'connecting');
+                addLog(`Disconnected: ${reason}`);
+            });
+
+            socket.io.engine.on('upgrade', (transport) => {
+                addLog(`Transport upgraded to: ${transport.name}`, 'success');
+            });
+        }
+
+        function testPollingOnly() {
+            addLog('=== Testing HTTP Polling Only ===');
+            connectSocket(['polling']);
+        }
+
+        function testWebSocketOnly() {
+            addLog('=== Testing WebSocket Only ===');
+            connectSocket(['websocket']);
+        }
+
+        function testBoth() {
+            addLog('=== Testing Auto (Polling → WebSocket) ===');
+            connectSocket(['polling', 'websocket']);
+        }
+
+        // Auto-connect on load with polling first
+        window.onload = () => {
+            addLog('Page loaded - Starting connection test');
+            testBoth();
+        };
+    </script>
+</body>
+</html>
