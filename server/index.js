@@ -11,20 +11,29 @@ const { setupSocketHandlers } = require('./socket/handlers');
 
 const app = express();
 const server = http.createServer(app);
+
+// Clean CLIENT_URL (remove trailing slash if present)
+const clientURL = (process.env.CLIENT_URL || 'http://localhost:5173').replace(/\/$/, '');
+
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: clientURL,
     methods: ['GET', 'POST'],
     credentials: true,
   },
-  transports: ['websocket', 'polling'],
+  transports: ['polling', 'websocket'],
   allowEIO3: true,
   pingTimeout: 60000,
   pingInterval: 25000,
 });
 
+console.log(`🌐 CORS enabled for: ${clientURL}`);
+
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: clientURL,
+  credentials: true,
+}));
 app.use(express.json());
 
 // Routes
