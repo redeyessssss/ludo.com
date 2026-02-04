@@ -17,6 +17,8 @@ export default function Game() {
   const [showDiceAnimation, setShowDiceAnimation] = useState(false);
   const [showWinAnimation, setShowWinAnimation] = useState(false);
   const [winner, setWinner] = useState(null);
+  const [availableMoves, setAvailableMoves] = useState([]);
+  const [lastAction, setLastAction] = useState(null);
 
   useEffect(() => {
     if (!user) {
@@ -50,7 +52,29 @@ export default function Game() {
       if (data.diceValue) {
         setDiceValue(data.diceValue);
         setShowDiceAnimation(true);
+        setAvailableMoves(data.availableMoves || []);
+        
+        // Show action message
+        if (data.reason === 'rolled_six') {
+          setLastAction('🎉 Rolled a 6! Get an extra turn!');
+        } else if (data.reason === 'three_sixes_limit') {
+          setLastAction('⚠️ Three 6s in a row! Turn passes to next player.');
+        } else if (data.captured && data.captured.length > 0) {
+          setLastAction(`🎯 Captured ${data.captured.length} token(s)! Extra turn!`);
+        }
+        
         setTimeout(() => setShowDiceAnimation(false), 1000);
+      } else if (data.action === 'token_moved') {
+        setAvailableMoves(data.availableMoves || []);
+        
+        // Show move feedback
+        if (data.captured && data.captured.length > 0) {
+          setLastAction(`🎯 Captured ${data.captured.length} token(s)!`);
+        } else if (data.extraTurn) {
+          setLastAction('🎉 Extra turn!');
+        } else {
+          setLastAction('✓ Move complete. Next player\'s turn!');
+        }
       }
     });
 
@@ -153,7 +177,7 @@ export default function Game() {
                   <p className="text-gray-700 font-semibold mb-2">📋 How to Play:</p>
                   <ul className="text-xs md:text-sm text-gray-600 space-y-1">
                     <li>✓ Click "Roll Dice" when it's your turn</li>
-                    <li>✓ Click on your tokens to move them</li>
+                    <li>✓ Click on highlighted tokens to move them</li>
                     <li>✓ Reach the center to win!</li>
                     <li>✓ Safe spots (⭐) protect your tokens</li>
                   </ul>
@@ -162,11 +186,28 @@ export default function Game() {
 
               {/* Game Board */}
               <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-2 md:p-4 shadow-inner">
+                {/* Last Action Display */}
+                {lastAction && (
+                  <div className="mb-4 p-3 bg-gradient-to-r from-blue-100 to-purple-100 border-2 border-blue-300 rounded-lg text-center animate-fade-in-up">
+                    <p className="text-sm md:text-base font-bold text-gray-800">{lastAction}</p>
+                  </div>
+                )}
+
+                {/* Available Moves Indicator */}
+                {availableMoves.length > 0 && isCurrentPlayer && (
+                  <div className="mb-4 p-3 bg-gradient-to-r from-green-100 to-emerald-100 border-2 border-green-400 rounded-lg text-center animate-pulse">
+                    <p className="text-sm md:text-base font-bold text-green-800">
+                      🎯 {availableMoves.length} token(s) available to move
+                    </p>
+                  </div>
+                )}
+
                 <LudoBoard
                   gameState={gameState}
                   onTokenClick={handleTokenClick}
                   onDiceRoll={handleRollDice}
                   currentUserId={user.id}
+                  availableMoves={availableMoves}
                 />
               </div>
             </div>

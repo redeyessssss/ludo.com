@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-export default function LudoBoard({ gameState, onTokenClick, onDiceRoll, currentUserId }) {
+export default function LudoBoard({ gameState, onTokenClick, onDiceRoll, currentUserId, availableMoves = [] }) {
   const [hoveredToken, setHoveredToken] = useState(null);
   const prevGameStateRef = useRef(null);
 
@@ -187,6 +187,7 @@ export default function LudoBoard({ gameState, onTokenClick, onDiceRoll, current
             return playerTokens.tokens.map((token, index) => {
               const pos = getTokenPosition(token, color);
               const isHovered = hoveredToken === `${playerId}-${index}`;
+              const isAvailable = availableMoves.includes(index);
 
               return (
                 <g
@@ -196,6 +197,18 @@ export default function LudoBoard({ gameState, onTokenClick, onDiceRoll, current
                   onMouseEnter={() => canMove && setHoveredToken(`${playerId}-${index}`)}
                   onMouseLeave={() => setHoveredToken(null)}
                 >
+                  {/* Highlight available moves */}
+                  {isAvailable && canMove && (
+                    <circle
+                      cx={pos.x}
+                      cy={pos.y}
+                      r="26"
+                      fill="#22c55e"
+                      opacity="0.3"
+                      className="animate-pulse"
+                    />
+                  )}
+
                   {/* Hover glow */}
                   {isHovered && canMove && (
                     <circle
@@ -209,15 +222,15 @@ export default function LudoBoard({ gameState, onTokenClick, onDiceRoll, current
                   )}
 
                   {/* Movable indicator ring */}
-                  {canMove && !isHovered && (
+                  {canMove && !isHovered && isAvailable && (
                     <circle
                       cx={pos.x}
                       cy={pos.y}
                       r="22"
                       fill="none"
-                      stroke={colorObj.main}
-                      strokeWidth="2"
-                      opacity="0.5"
+                      stroke="#22c55e"
+                      strokeWidth="3"
+                      opacity="0.8"
                       className="animate-movable-pulse"
                     />
                   )}
@@ -239,11 +252,11 @@ export default function LudoBoard({ gameState, onTokenClick, onDiceRoll, current
                     r="16"
                     fill={`url(#${color}Grad)`}
                     stroke="white"
-                    strokeWidth="2.5"
+                    strokeWidth={isAvailable ? 3 : 2.5}
                     filter="url(#glow)"
                     className={`transition-all duration-300 ${isHovered && canMove ? 'animate-bounce' : ''}`}
                     style={{
-                      transform: isHovered && canMove ? 'scale(1.25)' : 'scale(1)',
+                      transform: isHovered && canMove ? 'scale(1.25)' : isAvailable ? 'scale(1.1)' : 'scale(1)',
                       transformOrigin: `${pos.x}px ${pos.y}px`,
                     }}
                   />

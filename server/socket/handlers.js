@@ -227,10 +227,12 @@ function setupSocketHandlers(io) {
       }
 
       const diceValue = game.rollDice();
+      const availableMoves = game.getAvailableMoves(userId);
       
       io.to(gameId).emit('game:update', {
         gameState: game.getGameState(),
         diceValue,
+        availableMoves,
         action: 'dice_rolled',
       });
     });
@@ -244,11 +246,17 @@ function setupSocketHandlers(io) {
       const result = game.moveToken(userId, tokenId);
       
       if (result.success) {
+        const gameState = game.getGameState();
+        const availableMoves = game.getAvailableMoves(gameState.currentPlayer.id);
+        
         io.to(gameId).emit('game:update', {
-          gameState: game.getGameState(),
+          gameState,
           action: 'token_moved',
           captured: result.captured,
           extraTurn: result.extraTurn,
+          reason: result.reason,
+          bonus: result.bonus,
+          availableMoves,
         });
 
         if (result.winner) {
@@ -256,6 +264,7 @@ function setupSocketHandlers(io) {
           io.to(gameId).emit('game:end', {
             winner,
             gameState: game.getGameState(),
+            stats: game.playerStats,
           });
           
           // Clean up
