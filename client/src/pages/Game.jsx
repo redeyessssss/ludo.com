@@ -22,11 +22,12 @@ export default function Game() {
     }
 
     const newSocket = io('http://localhost:3001', {
-      transports: ['websocket', 'polling'],
+      transports: ['polling', 'websocket'], // Try polling first to avoid ad blocker issues
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionAttempts: 5,
       timeout: 20000,
+      upgrade: true, // Allow upgrade to WebSocket if available
     });
     
     setSocket(newSocket);
