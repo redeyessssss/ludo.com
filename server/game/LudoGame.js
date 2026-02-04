@@ -2,11 +2,19 @@
 const COLORS = ['red', 'blue', 'green', 'yellow'];
 const TOKENS_PER_PLAYER = 4;
 const BOARD_PATH_LENGTH = 52;
-const FINISH_AREA_LENGTH = 6;
-const TOTAL_POSITIONS = BOARD_PATH_LENGTH + FINISH_AREA_LENGTH;
+const FINISH_AREA_LENGTH = 5; // 5 colored cells leading to center
+const TOTAL_POSITIONS = BOARD_PATH_LENGTH + FINISH_AREA_LENGTH; // 57 total
 
-// Safe positions on the board (marked with stars)
+// Safe positions on the board (marked with stars) - starting positions for each color
 const SAFE_POSITIONS = [0, 8, 13, 21, 26, 34, 39, 47];
+
+// Starting positions for each color on the main path
+const COLOR_START_POSITIONS = {
+  red: 0,
+  green: 13,
+  blue: 26,
+  yellow: 39,
+};
 
 class LudoGameEngine {
   constructor(players) {
@@ -57,6 +65,19 @@ class LudoGameEngine {
     return this.diceValue;
   }
 
+  getPlayerStartPosition(playerId) {
+    const color = this.tokens[playerId].color;
+    return COLOR_START_POSITIONS[color];
+  }
+
+  getPlayerFinishEntryPosition(playerId) {
+    // Position where player enters their home path (finish area)
+    const color = this.tokens[playerId].color;
+    const startPos = COLOR_START_POSITIONS[color];
+    // Entry is 51 positions after start (wrapping around)
+    return (startPos + 51) % BOARD_PATH_LENGTH;
+  }
+
   canMoveToken(playerId, tokenId) {
     const token = this.tokens[playerId].tokens[tokenId];
     
@@ -80,9 +101,28 @@ class LudoGameEngine {
       return false;
     }
 
-    // Can't overshoot the finish
-    if (token.position + this.diceValue > TOTAL_POSITIONS) {
-      return false;
+    // Check if move would overshoot finish
+    const finishEntryPos = this.getPlayerFinishEntryPosition(playerId);
+    const startPos = this.getPlayerStartPosition(playerId);
+    
+    if (token.position >= BOARD_PATH_LENGTH) {
+      // Token in finish area - can't overshoot
+      const finishPos = token.position - BOARD_PATH_LENGTH;
+      if (finishPos + this.diceValue > FINISH_AREA_LENGTH) {
+        return false;
+      }
+    } else {
+      // Token on main path - check if it will enter finish area
+      const relativePos = (token.position - startPos + BOARD_PATH_LENGTH) % BOARD_PATH_LENGTH;
+      const newRelativePos = relativePos + this.diceValue;
+      
+      if (newRelativePos >= 51) {
+        // Will enter finish area
+        const overshoot = newRelativePos - 51;
+        if (overshoot > FINISH_AREA_LENGTH) {
+          return false;
+        }
+      }
     }
 
     return true;
@@ -96,13 +136,29 @@ class LudoGameEngine {
     const token = this.tokens[playerId].tokens[tokenId];
     const oldPosition = token.position;
     const captured = [];
+    const startPos = this.getPlayerStartPosition(playerId);
 
     // Move token
     if (token.isHome) {
-      token.position = 0;
+      // Move out of home to starting position
+      token.position = startPos;
       token.isHome = false;
-    } else {
+    } else if (token.position >= BOARD_PATH_LENGTH) {
+      // Token in finish area
       token.position += this.diceValue;
+    } else {
+      // Token on main path
+      const relativePos = (token.position - startPos + BOARD_PATH_LENGTH) % BOARD_PATH_LENGTH;
+      const newRelativePos = relativePos + this.diceValue;
+      
+      if (newRelativePos >= 51) {
+        // Enter finish area
+        const overshoot = newRelativePos - 51;
+        token.position = BOARD_PATH_LENGTH + overshoot;
+      } else {
+        // Stay on main path
+        token.position = (token.position + this.diceValue) % BOARD_PATH_LENGTH;
+      }
     }
 
     // Check for captures (only on main path, not in finish area or safe spots)
@@ -211,7 +267,7 @@ class LudoGameEngine {
   }
 
   checkWin(playerId) {
-    // All 4 tokens must reach finish area (positions 52-57)
+    // All 4 tokens must reach finish area (positions 57+)
     return this.tokens[playerId].tokens.every(
       token => token.position >= TOTAL_POSITIONS
     );
