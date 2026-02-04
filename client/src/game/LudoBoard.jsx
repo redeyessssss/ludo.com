@@ -1,288 +1,264 @@
 import { useEffect, useRef, useState } from 'react';
 
 export default function LudoBoard({ gameState, onTokenClick, onDiceRoll, currentUserId, availableMoves = [] }) {
+  const canvasRef = useRef(null);
   const [hoveredToken, setHoveredToken] = useState(null);
-  const prevGameStateRef = useRef(null);
 
-  // Detect token movements
-  useEffect(() => {
-    prevGameStateRef.current = gameState;
-  }, [gameState]);
-
-  // Color palette
-  const colors = {
-    red: { main: '#ef4444', dark: '#dc2626', light: '#fecaca', rgb: '239, 68, 68' },
-    blue: { main: '#3b82f6', dark: '#2563eb', light: '#bfdbfe', rgb: '59, 130, 246' },
-    green: { main: '#22c55e', dark: '#16a34a', light: '#bbf7d0', rgb: '34, 197, 94' },
-    yellow: { main: '#eab308', dark: '#ca8a04', light: '#fef08a', rgb: '234, 179, 8' },
+  // Board configuration
+  const BOARD_SIZE = 500;
+  const CELL_SIZE = 25;
+  const TOKEN_RADIUS = 12;
+  const COLORS = {
+    red: '#e53935',
+    blue: '#29b6f6',
+    green: '#66bb6a',
+    yellow: '#fff176',
+    white: '#ffffff',
+    black: '#000000',
+    gray: '#e5e5e5',
+    darkGray: '#999999',
   };
 
-  // Calculate token position on board
-  const getTokenPosition = (token, color) => {
-    const cellSize = 40;
-    const boardSize = 520;
-    const centerX = boardSize / 2;
-    const centerY = boardSize / 2;
-
-    // Home positions
-    if (token.isHome) {
-      const homeMap = {
-        red: [
-          { x: 30, y: 30 }, { x: 70, y: 30 }, { x: 30, y: 70 }, { x: 70, y: 70 }
-        ],
-        blue: [
-          { x: 450, y: 450 }, { x: 490, y: 450 }, { x: 450, y: 490 }, { x: 490, y: 490 }
-        ],
-        green: [
-          { x: 450, y: 30 }, { x: 490, y: 30 }, { x: 450, y: 70 }, { x: 490, y: 70 }
-        ],
-        yellow: [
-          { x: 30, y: 450 }, { x: 70, y: 450 }, { x: 30, y: 490 }, { x: 70, y: 490 }
-        ],
-      };
-      return homeMap[color][token.id] || { x: centerX, y: centerY };
-    }
-
-    // Path positions (52 positions on main path + 6 in finish area)
-    const pathPositions = [];
+  // Board path positions (52 cells total)
+  const getBoardPath = () => {
+    const path = [];
     
-    // Red path (top)
+    // Top row (left to right) - 13 cells
     for (let i = 0; i < 13; i++) {
-      pathPositions.push({ x: i * cellSize, y: 200 + cellSize / 2 });
+      path.push({ x: 6 + i, y: 6 });
     }
     
-    // Right turn (right side)
+    // Right column (top to bottom) - 13 cells
     for (let i = 1; i < 13; i++) {
-      pathPositions.push({ x: 520 - cellSize / 2, y: 200 + i * cellSize });
+      path.push({ x: 18, y: 6 + i });
     }
     
-    // Bottom (right to left)
+    // Bottom row (right to left) - 13 cells
     for (let i = 12; i >= 0; i--) {
-      pathPositions.push({ x: i * cellSize + cellSize / 2, y: 520 - cellSize / 2 });
+      path.push({ x: 6 + i, y: 18 });
     }
     
-    // Left side (bottom to top)
+    // Left column (bottom to top) - 13 cells
     for (let i = 12; i >= 1; i--) {
-      pathPositions.push({ x: cellSize / 2, y: 520 - i * cellSize });
+      path.push({ x: 6, y: 6 + i });
     }
-
-    if (token.position >= 0 && token.position < pathPositions.length) {
-      return pathPositions[token.position];
-    }
-
-    // Finish area (center)
-    return { x: centerX, y: centerY };
+    
+    return path;
   };
 
-  const handleTokenClick = (playerId, tokenIndex) => {
-    if (onTokenClick && gameState?.currentPlayer?.id === playerId) {
-      onTokenClick(tokenIndex);
-    }
+  // Home positions for each player
+  const getHomePositions = (color) => {
+    const homes = {
+      red: [
+        { x: 1, y: 1 }, { x: 3, y: 1 }, { x: 1, y: 3 }, { x: 3, y: 3 }
+      ],
+      blue: [
+        { x: 19, y: 19 }, { x: 21, y: 19 }, { x: 19, y: 21 }, { x: 21, y: 21 }
+      ],
+      green: [
+        { x: 19, y: 1 }, { x: 21, y: 1 }, { x: 19, y: 3 }, { x: 21, y: 3 }
+      ],
+      yellow: [
+        { x: 1, y: 19 }, { x: 3, y: 19 }, { x: 1, y: 21 }, { x: 3, y: 21 }
+      ],
+    };
+    return homes[color] || [];
+  };
+
+  // Safe positions
+  const getSafePositions = () => {
+    return [0, 8, 13, 21, 26, 34, 39, 47];
+  };
+
+  // Draw board
+  const drawBoard = (ctx) => {
+    // Clear canvas
+    ctx.fillStyle = COLORS.white;
+    ctx.fillRect(0, 0, BOARD_SIZE, BOARD_SIZE);
+
+    // Draw border
+    ctx.strokeStyle = COLORS.black;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(0, 0, BOARD_SIZE, BOARD_SIZE);
+
+    // Draw home areas
+    drawHomeArea(ctx, 'red', 0, 0);
+    drawHomeArea(ctx, 'blue', 475, 475);
+    drawHomeArea(ctx, 'green', 475, 0);
+    drawHomeArea(ctx, 'yellow', 0, 475);
+
+    // Draw main path
+    const path = getBoardPath();
+    path.forEach((pos, idx) => {
+      const x = pos.x * CELL_SIZE;
+      const y = pos.y * CELL_SIZE;
+      
+      // Draw cell
+      ctx.fillStyle = COLORS.gray;
+      ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
+      ctx.strokeStyle = COLORS.darkGray;
+      ctx.lineWidth = 0.5;
+      ctx.strokeRect(x, y, CELL_SIZE, CELL_SIZE);
+
+      // Draw safe spot
+      if (getSafePositions().includes(idx)) {
+        ctx.fillStyle = 'rgba(200, 200, 200, 0.5)';
+        ctx.beginPath();
+        ctx.arc(x + CELL_SIZE / 2, y + CELL_SIZE / 2, CELL_SIZE / 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = COLORS.darkGray;
+        ctx.font = 'bold 12px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('★', x + CELL_SIZE / 2, y + CELL_SIZE / 2);
+      }
+    });
+
+    // Draw center finish area
+    ctx.fillStyle = '#fbbf24';
+    ctx.beginPath();
+    ctx.arc(BOARD_SIZE / 2, BOARD_SIZE / 2, 30, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = COLORS.black;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = COLORS.black;
+    ctx.font = 'bold 24px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🏆', BOARD_SIZE / 2, BOARD_SIZE / 2);
+  };
+
+  // Draw home area
+  const drawHomeArea = (ctx, color, startX, startY) => {
+    ctx.fillStyle = COLORS[color];
+    ctx.globalAlpha = 0.2;
+    ctx.fillRect(startX, startY, 25, 25);
+    ctx.globalAlpha = 1;
+    
+    ctx.strokeStyle = COLORS[color];
+    ctx.lineWidth = 2;
+    ctx.strokeRect(startX, startY, 25, 25);
+  };
+
+  // Draw tokens
+  const drawTokens = (ctx) => {
+    if (!gameState || !gameState.tokens) return;
+
+    Object.keys(gameState.tokens).forEach(playerId => {
+      const playerTokens = gameState.tokens[playerId];
+      const color = playerTokens.color;
+      const path = getBoardPath();
+
+      playerTokens.tokens.forEach((token, idx) => {
+        let x, y;
+
+        if (token.isHome) {
+          const homePos = getHomePositions(color)[idx];
+          x = homePos.x * CELL_SIZE + CELL_SIZE / 2;
+          y = homePos.y * CELL_SIZE + CELL_SIZE / 2;
+        } else if (token.position >= 0 && token.position < path.length) {
+          const pos = path[token.position];
+          x = pos.x * CELL_SIZE + CELL_SIZE / 2;
+          y = pos.y * CELL_SIZE + CELL_SIZE / 2;
+        } else {
+          // Finish area
+          x = BOARD_SIZE / 2 + (Math.random() - 0.5) * 20;
+          y = BOARD_SIZE / 2 + (Math.random() - 0.5) * 20;
+        }
+
+        // Draw token
+        ctx.fillStyle = COLORS[color];
+        ctx.beginPath();
+        ctx.arc(x, y, TOKEN_RADIUS, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Draw border
+        ctx.strokeStyle = COLORS.white;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Draw number
+        ctx.fillStyle = COLORS.white;
+        ctx.font = 'bold 10px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(idx + 1, x, y);
+
+        // Highlight available moves
+        if (availableMoves.includes(idx) && gameState.currentPlayer?.id === playerId) {
+          ctx.strokeStyle = '#22c55e';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.arc(x, y, TOKEN_RADIUS + 5, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      });
+    });
+  };
+
+  // Draw everything
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    drawBoard(ctx);
+    drawTokens(ctx);
+  }, [gameState, availableMoves]);
+
+  // Handle canvas click
+  const handleCanvasClick = (e) => {
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    if (!gameState || !gameState.tokens) return;
+
+    const playerTokens = gameState.tokens[currentUserId];
+    if (!playerTokens) return;
+
+    const path = getBoardPath();
+
+    playerTokens.tokens.forEach((token, idx) => {
+      let tokenX, tokenY;
+
+      if (token.isHome) {
+        const homePos = getHomePositions(playerTokens.color)[idx];
+        tokenX = homePos.x * CELL_SIZE + CELL_SIZE / 2;
+        tokenY = homePos.y * CELL_SIZE + CELL_SIZE / 2;
+      } else if (token.position >= 0 && token.position < path.length) {
+        const pos = path[token.position];
+        tokenX = pos.x * CELL_SIZE + CELL_SIZE / 2;
+        tokenY = pos.y * CELL_SIZE + CELL_SIZE / 2;
+      } else {
+        return;
+      }
+
+      const distance = Math.sqrt((x - tokenX) ** 2 + (y - tokenY) ** 2);
+      if (distance < TOKEN_RADIUS + 10 && availableMoves.includes(idx)) {
+        onTokenClick(idx);
+      }
+    });
   };
 
   return (
     <div className="w-full flex flex-col items-center justify-center">
-      {/* Main Board */}
-      <div className="relative w-full max-w-2xl aspect-square bg-gradient-to-br from-amber-50 via-amber-100 to-yellow-100 rounded-3xl shadow-2xl overflow-hidden border-8 border-amber-900">
-        
-        <svg
-          viewBox="0 0 520 520"
-          className="w-full h-full"
-          style={{ background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)' }}
-        >
-          <defs>
-            {/* Gradients */}
-            <linearGradient id="redGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" style={{ stopColor: '#ef4444', stopOpacity: 1 }} />
-              <stop offset="100%" style={{ stopColor: '#dc2626', stopOpacity: 1 }} />
-            </linearGradient>
-            <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" style={{ stopColor: '#3b82f6', stopOpacity: 1 }} />
-              <stop offset="100%" style={{ stopColor: '#2563eb', stopOpacity: 1 }} />
-            </linearGradient>
-            <linearGradient id="greenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" style={{ stopColor: '#22c55e', stopOpacity: 1 }} />
-              <stop offset="100%" style={{ stopColor: '#16a34a', stopOpacity: 1 }} />
-            </linearGradient>
-            <linearGradient id="yellowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" style={{ stopColor: '#eab308', stopOpacity: 1 }} />
-              <stop offset="100%" style={{ stopColor: '#ca8a04', stopOpacity: 1 }} />
-            </linearGradient>
-            
-            {/* Filters */}
-            <filter id="shadow">
-              <feDropShadow dx="0" dy="2" stdDeviation="2" floodOpacity="0.4" />
-            </filter>
-            <filter id="glow">
-              <feGaussianBlur stdDeviation="2" result="coloredBlur" />
-              <feMerge>
-                <feMergeNode in="coloredBlur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
-
-          {/* Home Areas */}
-          {/* Red Home */}
-          <rect x="0" y="0" width="120" height="120" fill="url(#redGrad)" opacity="0.15" rx="8" />
-          <text x="60" y="25" fontSize="16" fontWeight="bold" textAnchor="middle" fill="#dc2626">🏠</text>
-          <text x="60" y="110" fontSize="12" fontWeight="bold" textAnchor="middle" fill="#dc2626">Red</text>
-
-          {/* Blue Home */}
-          <rect x="400" y="400" width="120" height="120" fill="url(#blueGrad)" opacity="0.15" rx="8" />
-          <text x="460" y="425" fontSize="16" fontWeight="bold" textAnchor="middle" fill="#2563eb">🏠</text>
-          <text x="460" y="510" fontSize="12" fontWeight="bold" textAnchor="middle" fill="#2563eb">Blue</text>
-
-          {/* Green Home */}
-          <rect x="400" y="0" width="120" height="120" fill="url(#greenGrad)" opacity="0.15" rx="8" />
-          <text x="460" y="25" fontSize="16" fontWeight="bold" textAnchor="middle" fill="#16a34a">🏠</text>
-          <text x="460" y="110" fontSize="12" fontWeight="bold" textAnchor="middle" fill="#16a34a">Green</text>
-
-          {/* Yellow Home */}
-          <rect x="0" y="400" width="120" height="120" fill="url(#yellowGrad)" opacity="0.15" rx="8" />
-          <text x="60" y="425" fontSize="16" fontWeight="bold" textAnchor="middle" fill="#ca8a04">🏠</text>
-          <text x="60" y="510" fontSize="12" fontWeight="bold" textAnchor="middle" fill="#ca8a04">Yellow</text>
-
-          {/* Main Path - Cross Pattern */}
-          {/* Horizontal paths */}
-          {[...Array(13)].map((_, i) => (
-            <g key={`h-${i}`}>
-              <rect x={i * 40} y="200" width="40" height="40" fill="white" stroke="#d1d5db" strokeWidth="1" rx="2" />
-              <rect x={i * 40} y="280" width="40" height="40" fill="white" stroke="#d1d5db" strokeWidth="1" rx="2" />
-            </g>
-          ))}
-
-          {/* Vertical paths */}
-          {[...Array(13)].map((_, i) => (
-            <g key={`v-${i}`}>
-              <rect x="200" y={i * 40} width="40" height="40" fill="white" stroke="#d1d5db" strokeWidth="1" rx="2" />
-              <rect x="280" y={i * 40} width="40" height="40" fill="white" stroke="#d1d5db" strokeWidth="1" rx="2" />
-            </g>
-          ))}
-
-          {/* Safe Spots */}
-          {[
-            { x: 100, y: 220, color: '#dc2626' },
-            { x: 220, y: 100, color: '#16a34a' },
-            { x: 420, y: 300, color: '#2563eb' },
-            { x: 300, y: 420, color: '#ca8a04' },
-          ].map((spot, i) => (
-            <g key={`safe-${i}`}>
-              <circle cx={spot.x} cy={spot.y} r="14" fill={spot.color} opacity="0.2" />
-              <text x={spot.x} y={spot.y} fontSize="18" textAnchor="middle" dominantBaseline="middle" fill={spot.color}>⭐</text>
-            </g>
-          ))}
-
-          {/* Center Finish Area */}
-          <circle cx="260" cy="260" r="40" fill="#fbbf24" opacity="0.3" stroke="#ca8a04" strokeWidth="3" />
-          <text x="260" y="260" fontSize="32" textAnchor="middle" dominantBaseline="middle">🏆</text>
-
-          {/* Render Tokens */}
-          {gameState && gameState.tokens && Object.keys(gameState.tokens).map(playerId => {
-            const playerTokens = gameState.tokens[playerId];
-            const color = playerTokens.color;
-            const colorObj = colors[color];
-            const canMove = gameState.currentPlayer?.id === playerId;
-            
-            return playerTokens.tokens.map((token, index) => {
-              const pos = getTokenPosition(token, color);
-              const isHovered = hoveredToken === `${playerId}-${index}`;
-              const isAvailable = availableMoves.includes(index);
-
-              return (
-                <g
-                  key={`token-${playerId}-${index}`}
-                  className={canMove ? 'cursor-pointer' : 'cursor-not-allowed'}
-                  onClick={() => handleTokenClick(playerId, index)}
-                  onMouseEnter={() => canMove && setHoveredToken(`${playerId}-${index}`)}
-                  onMouseLeave={() => setHoveredToken(null)}
-                >
-                  {/* Highlight available moves */}
-                  {isAvailable && canMove && (
-                    <circle
-                      cx={pos.x}
-                      cy={pos.y}
-                      r="26"
-                      fill="#22c55e"
-                      opacity="0.3"
-                      className="animate-pulse"
-                    />
-                  )}
-
-                  {/* Hover glow */}
-                  {isHovered && canMove && (
-                    <circle
-                      cx={pos.x}
-                      cy={pos.y}
-                      r="24"
-                      fill={colorObj.main}
-                      opacity="0.25"
-                      className="animate-pulse"
-                    />
-                  )}
-
-                  {/* Movable indicator ring */}
-                  {canMove && !isHovered && isAvailable && (
-                    <circle
-                      cx={pos.x}
-                      cy={pos.y}
-                      r="22"
-                      fill="none"
-                      stroke="#22c55e"
-                      strokeWidth="3"
-                      opacity="0.8"
-                      className="animate-movable-pulse"
-                    />
-                  )}
-
-                  {/* Token shadow */}
-                  <circle
-                    cx={pos.x + 1}
-                    cy={pos.y + 1}
-                    r="16"
-                    fill="black"
-                    opacity="0.2"
-                    filter="url(#shadow)"
-                  />
-
-                  {/* Token body */}
-                  <circle
-                    cx={pos.x}
-                    cy={pos.y}
-                    r="16"
-                    fill={`url(#${color}Grad)`}
-                    stroke="white"
-                    strokeWidth={isAvailable ? 3 : 2.5}
-                    filter="url(#glow)"
-                    className={`transition-all duration-300 ${isHovered && canMove ? 'animate-bounce' : ''}`}
-                    style={{
-                      transform: isHovered && canMove ? 'scale(1.25)' : isAvailable ? 'scale(1.1)' : 'scale(1)',
-                      transformOrigin: `${pos.x}px ${pos.y}px`,
-                    }}
-                  />
-
-                  {/* Token number */}
-                  <text
-                    x={pos.x}
-                    y={pos.y}
-                    fontSize="12"
-                    fontWeight="bold"
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    fill="white"
-                    pointerEvents="none"
-                  >
-                    {index + 1}
-                  </text>
-                </g>
-              );
-            });
-          })}
-        </svg>
+      {/* Canvas Board */}
+      <div className="relative bg-white rounded-lg shadow-2xl overflow-hidden border-4 border-gray-800">
+        <canvas
+          ref={canvasRef}
+          width={BOARD_SIZE}
+          height={BOARD_SIZE}
+          onClick={handleCanvasClick}
+          className="cursor-pointer"
+          style={{ maxWidth: '100%', height: 'auto' }}
+        />
       </div>
 
       {/* Player Info */}
-      <div className="mt-6 w-full max-w-2xl grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="mt-6 w-full max-w-md grid grid-cols-2 md:grid-cols-4 gap-3">
         {gameState?.players?.map((player) => {
           const playerTokens = gameState.tokens[player.id];
           const isCurrentPlayer = gameState.currentPlayer?.id === player.id;
@@ -299,14 +275,7 @@ export default function LudoBoard({ gameState, onTokenClick, onDiceRoll, current
               <div className="flex items-center justify-center gap-2 mb-1">
                 <div
                   className="w-4 h-4 rounded-full border-2 border-white"
-                  style={{
-                    background: {
-                      red: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-                      blue: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-                      green: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
-                      yellow: 'linear-gradient(135deg, #eab308 0%, #ca8a04 100%)',
-                    }[playerTokens?.color] || '#ccc',
-                  }}
+                  style={{ backgroundColor: playerTokens?.color }}
                 />
                 <span className="font-bold text-gray-800 text-sm truncate">{player.username}</span>
               </div>

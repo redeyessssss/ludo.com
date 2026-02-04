@@ -1,19 +1,23 @@
-// Ludo Game Engine (Server-side) - Enhanced Version
+// Professional Ludo Game Engine
 const COLORS = ['red', 'blue', 'green', 'yellow'];
 const TOKENS_PER_PLAYER = 4;
-const BOARD_SIZE = 52; // Main path positions
-const FINISH_AREA = 6; // Finish area positions
+const BOARD_PATH_LENGTH = 52;
+const FINISH_AREA_LENGTH = 6;
+const TOTAL_POSITIONS = BOARD_PATH_LENGTH + FINISH_AREA_LENGTH;
+
+// Safe positions on the board
+const SAFE_POSITIONS = [0, 8, 13, 21, 26, 34, 39, 47];
 
 class LudoGameEngine {
   constructor(players) {
     this.players = players;
     this.currentPlayerIndex = 0;
     this.diceValue = null;
-    this.gameState = 'waiting';
+    this.gameState = 'playing';
     this.tokens = this.initializeTokens();
     this.winner = null;
     this.moveHistory = [];
-    this.consecutiveSixes = 0; // Track consecutive 6s
+    this.consecutiveSixes = 0;
     this.playerStats = this.initializeStats();
   }
 
@@ -24,10 +28,10 @@ class LudoGameEngine {
       tokens[player.id] = {
         color,
         tokens: [
-          { id: 0, position: -1, isHome: true, isSafe: false, captureCount: 0 },
-          { id: 1, position: -1, isHome: true, isSafe: false, captureCount: 0 },
-          { id: 2, position: -1, isHome: true, isSafe: false, captureCount: 0 },
-          { id: 3, position: -1, isHome: true, isSafe: false, captureCount: 0 },
+          { id: 0, position: -1, isHome: true },
+          { id: 1, position: -1, isHome: true },
+          { id: 2, position: -1, isHome: true },
+          { id: 3, position: -1, isHome: true },
         ],
       };
     });
@@ -48,43 +52,36 @@ class LudoGameEngine {
   }
 
   rollDice() {
-    // Better dice distribution for thrilling gameplay
-    // 6 appears more frequently (30% chance instead of 16.7%)
-    const rand = Math.random();
-    if (rand < 0.30) {
-      this.diceValue = 6; // 30% chance for 6
-    } else if (rand < 0.55) {
-      this.diceValue = Math.floor(Math.random() * 5) + 1; // 1-5
-    } else {
-      this.diceValue = Math.floor(Math.random() * 6) + 1; // 1-6
-    }
-    
+    // Standard dice: 1-6 with equal probability
+    this.diceValue = Math.floor(Math.random() * 6) + 1;
     return this.diceValue;
   }
 
   canMoveToken(playerId, tokenId) {
     const token = this.tokens[playerId].tokens[tokenId];
     
+    // Check if it's this player's turn
     if (this.players[this.currentPlayerIndex].id !== playerId) {
       return false;
     }
 
+    // Must have rolled dice
     if (!this.diceValue) {
       return false;
     }
 
-    // Token in home - can move with any number (not just 6)
-    if (token.position === -1) {
-      return true; // Allow any dice value to move out
+    // Token in home - needs 6 to move out
+    if (token.isHome) {
+      return this.diceValue === 6;
     }
 
     // Token already finished
-    if (token.position >= BOARD_SIZE + FINISH_AREA) {
+    if (token.position >= TOTAL_POSITIONS) {
       return false;
     }
 
-    // Can move if it doesn't overshoot
-    if (token.position + this.diceValue > BOARD_SIZE + FINISH_AREA) {
+    // Can't overshoot the finish
+    if (token.position + this.diceValue > TOTAL_POSITIONS) {
       return false;
     }
 
@@ -99,35 +96,29 @@ class LudoGameEngine {
     const token = this.tokens[playerId].tokens[tokenId];
     const oldPosition = token.position;
     const captured = [];
-    let bonus = 0;
 
     // Move token
-    if (token.position === -1) {
-      // Moving out of home
+    if (token.isHome) {
       token.position = 0;
       token.isHome = false;
-      token.isSafe = this.isSafePosition(0);
     } else {
       token.position += this.diceValue;
-      token.isSafe = this.isSafePosition(token.position);
     }
 
     // Check for captures (only on main path, not in finish area)
-    if (token.position < BOARD_SIZE && !token.isSafe) {
+    if (token.position < BOARD_PATH_LENGTH && !this.isSafePosition(token.position)) {
       const capturedTokens = this.checkCaptures(playerId, token.position);
       captured.push(...capturedTokens);
       
-      // Bonus points for captures
       if (captured.length > 0) {
-        bonus = captured.length * 10;
         this.playerStats[playerId].capturesCount += captured.length;
       }
     }
 
     // Update finish area stats
-    if (token.position >= BOARD_SIZE) {
+    if (token.position >= BOARD_PATH_LENGTH) {
       this.playerStats[playerId].tokensInFinish = this.tokens[playerId].tokens.filter(
-        t => t.position >= BOARD_SIZE
+        t => t.position >= BOARD_PATH_LENGTH
       ).length;
     }
 
@@ -139,7 +130,6 @@ class LudoGameEngine {
       to: token.position,
       diceValue: this.diceValue,
       captured,
-      bonus,
       timestamp: Date.now(),
     });
 
@@ -150,7 +140,7 @@ class LudoGameEngine {
       this.gameState = 'finished';
     }
 
-    // Determine if player gets extra turn
+    // Determine extra turn
     let extraTurn = false;
     let reason = '';
 
@@ -159,7 +149,7 @@ class LudoGameEngine {
       reason = 'rolled_six';
       this.consecutiveSixes++;
       
-      // Limit consecutive 6s to 3 (after 3 sixes, turn passes)
+      // Limit consecutive 6s to 3
       if (this.consecutiveSixes >= 3) {
         extraTurn = false;
         this.consecutiveSixes = 0;
@@ -187,22 +177,17 @@ class LudoGameEngine {
       captured,
       extraTurn,
       reason,
-      bonus,
       winner: this.winner,
     };
   }
 
   isSafePosition(position) {
-    // More safe positions for balanced gameplay
-    // Safe positions: 0, 8, 13, 21, 26, 34, 39, 47, 52+ (finish area)
-    const safePositions = [0, 8, 13, 21, 26, 34, 39, 47];
-    
     // Finish area is always safe
-    if (position >= BOARD_SIZE) {
+    if (position >= BOARD_PATH_LENGTH) {
       return true;
     }
     
-    return safePositions.includes(position);
+    return SAFE_POSITIONS.includes(position);
   }
 
   checkCaptures(playerId, position) {
@@ -212,10 +197,9 @@ class LudoGameEngine {
       if (opponentId === playerId) return;
       
       this.tokens[opponentId].tokens.forEach((token, index) => {
-        if (token.position === position && !token.isSafe) {
+        if (token.position === position && !token.isHome && !this.isSafePosition(position)) {
           token.position = -1;
           token.isHome = true;
-          token.isSafe = false;
           this.playerStats[opponentId].tokensCaptured++;
           captured.push({ playerId: opponentId, tokenId: index });
         }
@@ -226,37 +210,20 @@ class LudoGameEngine {
   }
 
   checkWin(playerId) {
-    // All tokens must reach finish area (position 52-57)
     return this.tokens[playerId].tokens.every(
-      token => token.position >= BOARD_SIZE + FINISH_AREA
+      token => token.position >= TOTAL_POSITIONS
     );
   }
 
   nextTurn() {
     this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
-    this.consecutiveSixes = 0; // Reset consecutive sixes counter
+    this.consecutiveSixes = 0;
   }
 
   getCurrentPlayer() {
     return this.players[this.currentPlayerIndex];
   }
 
-  getGameState() {
-    return {
-      players: this.players,
-      tokens: this.tokens,
-      currentPlayerIndex: this.currentPlayerIndex,
-      currentPlayer: this.getCurrentPlayer(),
-      diceValue: this.diceValue,
-      gameState: this.gameState,
-      winner: this.winner,
-      moveHistory: this.moveHistory,
-      playerStats: this.playerStats,
-      consecutiveSixes: this.consecutiveSixes,
-    };
-  }
-
-  // Get available moves for current player
   getAvailableMoves(playerId) {
     if (this.players[this.currentPlayerIndex].id !== playerId || !this.diceValue) {
       return [];
@@ -272,6 +239,21 @@ class LudoGameEngine {
     });
 
     return availableMoves;
+  }
+
+  getGameState() {
+    return {
+      players: this.players,
+      tokens: this.tokens,
+      currentPlayerIndex: this.currentPlayerIndex,
+      currentPlayer: this.getCurrentPlayer(),
+      diceValue: this.diceValue,
+      gameState: this.gameState,
+      winner: this.winner,
+      moveHistory: this.moveHistory,
+      playerStats: this.playerStats,
+      consecutiveSixes: this.consecutiveSixes,
+    };
   }
 }
 
