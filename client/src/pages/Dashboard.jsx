@@ -15,7 +15,8 @@ export default function Dashboard() {
   const [connectionStatus, setConnectionStatus] = useState('connecting');
 
   useEffect(() => {
-    const newSocket = io('http://localhost:3001', {
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    const newSocket = io(API_URL, {
       transports: ['polling', 'websocket'], // Try polling first to avoid ad blocker issues
       reconnection: true,
       reconnectionDelay: 1000,
