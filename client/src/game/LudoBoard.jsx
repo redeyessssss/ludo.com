@@ -256,6 +256,20 @@ export default function LudoBoard({ gameState, onTokenClick, onDiceRoll, current
                   />
                 )}
 
+                {/* Highlight for movable tokens */}
+                {canMove && !isHovered && (
+                  <circle
+                    cx={pos.x}
+                    cy={pos.y}
+                    r="5.5"
+                    fill="none"
+                    stroke={colors[color].main}
+                    strokeWidth="0.5"
+                    opacity="0.5"
+                    className="animate-movable-pulse"
+                  />
+                )}
+
                 {/* Token shadow */}
                 <circle
                   cx={pos.x + 0.4}

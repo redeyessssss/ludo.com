@@ -118,6 +118,17 @@ body {
   }
 }
 
+@keyframes movable-pulse {
+  0%, 100% {
+    stroke-width: 0.5;
+    opacity: 0.5;
+  }
+  50% {
+    stroke-width: 1;
+    opacity: 0.8;
+  }
+}
+
 @keyframes token-move {
   0% {
     opacity: 0.7;
@@ -217,6 +228,10 @@ body {
 
 .animate-confetti {
   animation: confetti-fall 3s ease-in forwards;
+}
+
+.animate-movable-pulse {
+  animation: movable-pulse 1.5s ease-in-out infinite;
 }
 
 @layer components {
