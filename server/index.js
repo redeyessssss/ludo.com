@@ -12,8 +12,11 @@ const { setupSocketHandlers } = require('./socket/handlers');
 const app = express();
 const server = http.createServer(app);
 
-// Clean CLIENT_URL (remove trailing slash if present)
-const clientURL = (process.env.CLIENT_URL || 'http://localhost:5173').replace(/\/$/, '');
+// Clean CLIENT_URL (remove trailing slash, quotes, and whitespace)
+const clientURL = (process.env.CLIENT_URL || 'http://localhost:5173')
+  .trim()
+  .replace(/^["']|["']$/g, '') // Remove quotes
+  .replace(/\/$/, ''); // Remove trailing slash
 
 const io = new Server(server, {
   cors: {
