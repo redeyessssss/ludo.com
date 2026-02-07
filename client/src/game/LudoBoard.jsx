@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 
+// VERSION 5.0.2 - Board redesign matching reference image EXACTLY
 // CONSTANTS & CONFIG
 const MAIN_PATH_LENGTH = 52;
 const SAFE_CELLS = [0, 8, 13, 21, 26, 34, 39, 47];
