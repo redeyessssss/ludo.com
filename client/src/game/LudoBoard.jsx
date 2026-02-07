@@ -19,26 +19,18 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
   const CELL_SIZE = 60;
   const TOKEN_RADIUS = 22;
   
-  // Enhanced color palette (Ludo King style - vibrant and modern)
+  // EXACT colors from reference image
   const COLORS = {
-    red: '#FF3B30',
-    redDark: '#C7281E',
-    redLight: '#FF6B60',
-    blue: '#007AFF',
-    blueDark: '#0051D5',
-    blueLight: '#4DA3FF',
-    green: '#34C759',
-    greenDark: '#248A3D',
-    greenLight: '#5DD67D',
-    yellow: '#FFCC00',
-    yellowDark: '#D4A800',
-    yellowLight: '#FFD633',
-    white: '#FFFFFF',
-    black: '#000000',
-    boardBg: '#F8F4E6',
-    pathBg: '#FEFDFB',
-    safeGold: '#FFD700',
-    safeGlow: '#FFF4CC',
+    red: '#E53935',        // Bright red
+    green: '#43A047',      // Bright green
+    blue: '#1E88E5',       // Bright blue
+    yellow: '#FDD835',     // Bright yellow
+    white: '#FFFFFF',      // Pure white
+    black: '#000000',      // Black for lines
+    tokenRed: '#D32F2F',
+    tokenGreen: '#388E3C',
+    tokenBlue: '#1976D2',
+    tokenYellow: '#F9A825',
   };
 
   // Get the 52-cell main path (clockwise from red start)
@@ -144,251 +136,180 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     return homes[color] || [];
   };
 
-  // Helper: Draw gradient rectangle
-  const drawGradientRect = (ctx, x, y, width, height, color1, color2) => {
-    const gradient = ctx.createLinearGradient(x, y, x + width, y + height);
-    gradient.addColorStop(0, color1);
-    gradient.addColorStop(1, color2);
-    ctx.fillStyle = gradient;
-    ctx.fillRect(x, y, width, height);
-  };
-
-  // Draw the 15x15 grid board with Ludo King style visuals
+  // Draw the board EXACTLY like the reference image
   const drawBoard = (ctx) => {
-    // Background with warm texture
-    ctx.fillStyle = COLORS.boardBg;
+    // White background
+    ctx.fillStyle = COLORS.white;
     ctx.fillRect(0, 0, BOARD_SIZE, BOARD_SIZE);
 
-    // Draw 13x13 visible grid with subtle gradients
+    // Draw all white cells first (13x13 grid)
     for (let row = 0; row < 13; row++) {
       for (let col = 0; col < 13; col++) {
         const x = col * CELL_SIZE + (col >= 6 ? 180 : 0);
         const y = row * CELL_SIZE + (row >= 6 ? 180 : 0);
         
-        // Path cells with subtle gradient
-        const gradient = ctx.createLinearGradient(x, y, x + CELL_SIZE, y + CELL_SIZE);
-        gradient.addColorStop(0, COLORS.pathBg);
-        gradient.addColorStop(1, '#F5F2E8');
-        ctx.fillStyle = gradient;
+        ctx.fillStyle = COLORS.white;
         ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
         
-        // Border
-        ctx.strokeStyle = '#D4CDB8';
-        ctx.lineWidth = 1;
+        // Black grid lines
+        ctx.strokeStyle = COLORS.black;
+        ctx.lineWidth = 2;
         ctx.strokeRect(x, y, CELL_SIZE, CELL_SIZE);
       }
     }
 
-    // Draw home areas with vibrant gradients (Ludo King style)
-    // Red (top-left)
-    drawGradientRect(ctx, 0, 0, 360, 360, COLORS.red, COLORS.redDark);
-    drawGradientRect(ctx, 40, 40, 280, 280, COLORS.white, '#FFF8F8');
-    ctx.strokeStyle = COLORS.redDark;
-    ctx.lineWidth = 5;
+    // Draw home areas (large colored squares in corners)
+    // RED (top-left)
+    ctx.fillStyle = COLORS.red;
+    ctx.fillRect(0, 0, 360, 360);
+    ctx.fillStyle = COLORS.white;
+    ctx.fillRect(30, 30, 300, 300);
+    ctx.strokeStyle = COLORS.black;
+    ctx.lineWidth = 3;
     ctx.strokeRect(0, 0, 360, 360);
-    ctx.strokeStyle = COLORS.red;
-    ctx.lineWidth = 3;
-    ctx.strokeRect(40, 40, 280, 280);
+    ctx.strokeRect(30, 30, 300, 300);
     
-    // Green (top-right)
-    drawGradientRect(ctx, 540, 0, 360, 360, COLORS.green, COLORS.greenDark);
-    drawGradientRect(ctx, 580, 40, 280, 280, COLORS.white, '#F8FFF8');
-    ctx.strokeStyle = COLORS.greenDark;
-    ctx.lineWidth = 5;
+    // GREEN (top-right)
+    ctx.fillStyle = COLORS.green;
+    ctx.fillRect(540, 0, 360, 360);
+    ctx.fillStyle = COLORS.white;
+    ctx.fillRect(570, 30, 300, 300);
+    ctx.strokeStyle = COLORS.black;
+    ctx.lineWidth = 3;
     ctx.strokeRect(540, 0, 360, 360);
-    ctx.strokeStyle = COLORS.green;
-    ctx.lineWidth = 3;
-    ctx.strokeRect(580, 40, 280, 280);
+    ctx.strokeRect(570, 30, 300, 300);
     
-    // Yellow (bottom-left)
-    drawGradientRect(ctx, 0, 540, 360, 360, COLORS.yellow, COLORS.yellowDark);
-    drawGradientRect(ctx, 40, 580, 280, 280, COLORS.white, '#FFFEF8');
-    ctx.strokeStyle = COLORS.yellowDark;
-    ctx.lineWidth = 5;
+    // BLUE (bottom-left)
+    ctx.fillStyle = COLORS.blue;
+    ctx.fillRect(0, 540, 360, 360);
+    ctx.fillStyle = COLORS.white;
+    ctx.fillRect(30, 570, 300, 300);
+    ctx.strokeStyle = COLORS.black;
+    ctx.lineWidth = 3;
     ctx.strokeRect(0, 540, 360, 360);
-    ctx.strokeStyle = COLORS.yellow;
-    ctx.lineWidth = 3;
-    ctx.strokeRect(40, 580, 280, 280);
+    ctx.strokeRect(30, 570, 300, 300);
     
-    // Blue (bottom-right)
-    drawGradientRect(ctx, 540, 540, 360, 360, COLORS.blue, COLORS.blueDark);
-    drawGradientRect(ctx, 580, 580, 280, 280, COLORS.white, '#F8F8FF');
-    ctx.strokeStyle = COLORS.blueDark;
-    ctx.lineWidth = 5;
-    ctx.strokeRect(540, 540, 360, 360);
-    ctx.strokeStyle = COLORS.blue;
+    // YELLOW (bottom-right)
+    ctx.fillStyle = COLORS.yellow;
+    ctx.fillRect(540, 540, 360, 360);
+    ctx.fillStyle = COLORS.white;
+    ctx.fillRect(570, 570, 300, 300);
+    ctx.strokeStyle = COLORS.black;
     ctx.lineWidth = 3;
-    ctx.strokeRect(580, 580, 280, 280);
+    ctx.strokeRect(540, 540, 360, 360);
+    ctx.strokeRect(570, 570, 300, 300);
 
-    // Draw home paths with gradients
+    // Draw home paths (colored paths leading to center)
     const homePaths = getHomePaths();
-    Object.keys(homePaths).forEach(color => {
-      const darkColor = COLORS[color + 'Dark'];
-      
-      homePaths[color].forEach((pos, idx) => {
-        const x = pos.x * CELL_SIZE + (pos.x >= 6 ? 180 : 0);
-        const y = pos.y * CELL_SIZE + (pos.y >= 6 ? 180 : 0);
-        
-        // Gradient for home path
-        drawGradientRect(ctx, x, y, CELL_SIZE, CELL_SIZE, COLORS[color], darkColor);
-        
-        ctx.strokeStyle = darkColor;
-        ctx.lineWidth = 2;
-        ctx.strokeRect(x, y, CELL_SIZE, CELL_SIZE);
-        
-        // Arrow indicator on first cell
-        if (idx === 0) {
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-          ctx.font = 'bold 24px Arial';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText('▶', x + CELL_SIZE / 2, y + CELL_SIZE / 2);
-        }
-      });
-    });
-
-    // Draw main path with enhanced safe spots
-    const mainPath = getMainPath();
-    mainPath.forEach((pos, idx) => {
+    
+    // RED home path
+    ctx.fillStyle = COLORS.red;
+    homePaths.red.forEach(pos => {
       const x = pos.x * CELL_SIZE + (pos.x >= 6 ? 180 : 0);
       const y = pos.y * CELL_SIZE + (pos.y >= 6 ? 180 : 0);
-      
-      // Border
-      ctx.strokeStyle = '#C4BDA8';
+      ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
+      ctx.strokeStyle = COLORS.black;
       ctx.lineWidth = 2;
       ctx.strokeRect(x, y, CELL_SIZE, CELL_SIZE);
-
-      // Safe cells with glow effect (Ludo King style)
-      if (SAFE_CELLS.includes(idx)) {
-        // Glow effect
-        const glowGradient = ctx.createRadialGradient(
-          x + CELL_SIZE / 2, y + CELL_SIZE / 2, 0,
-          x + CELL_SIZE / 2, y + CELL_SIZE / 2, CELL_SIZE / 2
-        );
-        glowGradient.addColorStop(0, COLORS.safeGlow);
-        glowGradient.addColorStop(1, 'rgba(255, 244, 204, 0)');
-        ctx.fillStyle = glowGradient;
-        ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
-        
-        // Star with shadow
-        ctx.shadowColor = 'rgba(255, 215, 0, 0.5)';
-        ctx.shadowBlur = 10;
-        ctx.shadowOffsetX = 2;
-        ctx.shadowOffsetY = 2;
-        
-        ctx.fillStyle = COLORS.safeGold;
-        ctx.font = 'bold 38px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('★', x + CELL_SIZE / 2, y + CELL_SIZE / 2);
-        
-        ctx.shadowColor = 'transparent';
-        ctx.shadowBlur = 0;
-      }
+    });
+    
+    // GREEN home path
+    ctx.fillStyle = COLORS.green;
+    homePaths.green.forEach(pos => {
+      const x = pos.x * CELL_SIZE + (pos.x >= 6 ? 180 : 0);
+      const y = pos.y * CELL_SIZE + (pos.y >= 6 ? 180 : 0);
+      ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
+      ctx.strokeStyle = COLORS.black;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x, y, CELL_SIZE, CELL_SIZE);
+    });
+    
+    // BLUE home path
+    ctx.fillStyle = COLORS.blue;
+    homePaths.blue.forEach(pos => {
+      const x = pos.x * CELL_SIZE + (pos.x >= 6 ? 180 : 0);
+      const y = pos.y * CELL_SIZE + (pos.y >= 6 ? 180 : 0);
+      ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
+      ctx.strokeStyle = COLORS.black;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x, y, CELL_SIZE, CELL_SIZE);
+    });
+    
+    // YELLOW home path
+    ctx.fillStyle = COLORS.yellow;
+    homePaths.yellow.forEach(pos => {
+      const x = pos.x * CELL_SIZE + (pos.x >= 6 ? 180 : 0);
+      const y = pos.y * CELL_SIZE + (pos.y >= 6 ? 180 : 0);
+      ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
+      ctx.strokeStyle = COLORS.black;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x, y, CELL_SIZE, CELL_SIZE);
     });
 
-    // Center finish area with enhanced triangles and glow
+    // Center finish area with 4 colored triangles
     const centerX = BOARD_SIZE / 2;
     const centerY = BOARD_SIZE / 2;
     const triangleSize = 90;
     
-    // Red triangle (left) with gradient
-    const redGradient = ctx.createLinearGradient(centerX - triangleSize, centerY, centerX, centerY);
-    redGradient.addColorStop(0, COLORS.red);
-    redGradient.addColorStop(1, COLORS.redDark);
-    ctx.fillStyle = redGradient;
+    // RED triangle (left)
+    ctx.fillStyle = COLORS.red;
     ctx.beginPath();
     ctx.moveTo(centerX - triangleSize, centerY - triangleSize);
     ctx.lineTo(centerX, centerY);
     ctx.lineTo(centerX - triangleSize, centerY + triangleSize);
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = COLORS.redDark;
-    ctx.lineWidth = 3;
+    ctx.strokeStyle = COLORS.black;
+    ctx.lineWidth = 2;
     ctx.stroke();
     
-    // Green triangle (top) with gradient
-    const greenGradient = ctx.createLinearGradient(centerX, centerY - triangleSize, centerX, centerY);
-    greenGradient.addColorStop(0, COLORS.green);
-    greenGradient.addColorStop(1, COLORS.greenDark);
-    ctx.fillStyle = greenGradient;
+    // GREEN triangle (top)
+    ctx.fillStyle = COLORS.green;
     ctx.beginPath();
     ctx.moveTo(centerX - triangleSize, centerY - triangleSize);
     ctx.lineTo(centerX, centerY);
     ctx.lineTo(centerX + triangleSize, centerY - triangleSize);
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = COLORS.greenDark;
-    ctx.lineWidth = 3;
+    ctx.strokeStyle = COLORS.black;
+    ctx.lineWidth = 2;
     ctx.stroke();
     
-    // Yellow triangle (bottom) with gradient
-    const yellowGradient = ctx.createLinearGradient(centerX, centerY, centerX, centerY + triangleSize);
-    yellowGradient.addColorStop(0, COLORS.yellow);
-    yellowGradient.addColorStop(1, COLORS.yellowDark);
-    ctx.fillStyle = yellowGradient;
+    // YELLOW triangle (bottom)
+    ctx.fillStyle = COLORS.yellow;
     ctx.beginPath();
     ctx.moveTo(centerX - triangleSize, centerY + triangleSize);
     ctx.lineTo(centerX, centerY);
     ctx.lineTo(centerX + triangleSize, centerY + triangleSize);
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = COLORS.yellowDark;
-    ctx.lineWidth = 3;
+    ctx.strokeStyle = COLORS.black;
+    ctx.lineWidth = 2;
     ctx.stroke();
     
-    // Blue triangle (right) with gradient
-    const blueGradient = ctx.createLinearGradient(centerX, centerY, centerX + triangleSize, centerY);
-    blueGradient.addColorStop(0, COLORS.blue);
-    blueGradient.addColorStop(1, COLORS.blueDark);
-    ctx.fillStyle = blueGradient;
+    // BLUE triangle (right)
+    ctx.fillStyle = COLORS.blue;
     ctx.beginPath();
     ctx.moveTo(centerX + triangleSize, centerY - triangleSize);
     ctx.lineTo(centerX, centerY);
     ctx.lineTo(centerX + triangleSize, centerY + triangleSize);
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = COLORS.blueDark;
-    ctx.lineWidth = 3;
+    ctx.strokeStyle = COLORS.black;
+    ctx.lineWidth = 2;
     ctx.stroke();
     
-    // Center circle with radial gradient and glow
-    ctx.shadowColor = 'rgba(255, 215, 0, 0.6)';
-    ctx.shadowBlur = 20;
-    
-    const centerGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 50);
-    centerGradient.addColorStop(0, '#FFFFFF');
-    centerGradient.addColorStop(0.7, '#FFF9E6');
-    centerGradient.addColorStop(1, COLORS.safeGold);
-    ctx.fillStyle = centerGradient;
+    // Center white circle
+    ctx.fillStyle = COLORS.white;
     ctx.beginPath();
-    ctx.arc(centerX, centerY, 50, 0, Math.PI * 2);
+    ctx.arc(centerX, centerY, 35, 0, Math.PI * 2);
     ctx.fill();
-    
-    ctx.shadowColor = 'transparent';
-    ctx.shadowBlur = 0;
-    
-    ctx.strokeStyle = COLORS.yellowDark;
-    ctx.lineWidth = 4;
+    ctx.strokeStyle = COLORS.black;
+    ctx.lineWidth = 2;
     ctx.stroke();
-    
-    // HOME emoji with shadow
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-    ctx.shadowBlur = 5;
-    ctx.shadowOffsetX = 2;
-    ctx.shadowOffsetY = 2;
-    
-    ctx.font = 'bold 36px Arial';
-    ctx.fillStyle = COLORS.black;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('🏠', centerX, centerY);
-    
-    ctx.shadowColor = 'transparent';
-    ctx.shadowBlur = 0;
   };
 
-  // Draw tokens with 3D glossy effect (Ludo King style)
+  // Draw tokens - simple circular style like reference image
   const drawTokens = (ctx) => {
     if (!gameState || !gameState.tokens) return;
 
@@ -411,20 +332,19 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
         } else if (token.finished) {
           // Token finished - place in center
           const angle = (idx * Math.PI * 2) / 4 - Math.PI / 2;
-          x = BOARD_SIZE / 2 + Math.cos(angle) * 25;
-          y = BOARD_SIZE / 2 + Math.sin(angle) * 25;
+          x = BOARD_SIZE / 2 + Math.cos(angle) * 20;
+          y = BOARD_SIZE / 2 + Math.sin(angle) * 20;
         } else if (token.position >= config.homeStart) {
-          // Token in home path (colored path to center)
+          // Token in home path
           const homePathIndex = token.position - config.homeStart;
           if (homePathIndex < HOME_PATH_LENGTH) {
             const pos = homePaths[color][homePathIndex];
             x = pos.x * CELL_SIZE + (pos.x >= 6 ? 180 : 0) + CELL_SIZE / 2;
             y = pos.y * CELL_SIZE + (pos.y >= 6 ? 180 : 0) + CELL_SIZE / 2;
           } else {
-            // Finished
             const angle = (idx * Math.PI * 2) / 4 - Math.PI / 2;
-            x = BOARD_SIZE / 2 + Math.cos(angle) * 25;
-            y = BOARD_SIZE / 2 + Math.sin(angle) * 25;
+            x = BOARD_SIZE / 2 + Math.cos(angle) * 20;
+            y = BOARD_SIZE / 2 + Math.sin(angle) * 20;
           }
         } else if (token.position >= 0 && token.position < MAIN_PATH_LENGTH) {
           // Token on main path
@@ -432,113 +352,44 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
           x = pos.x * CELL_SIZE + (pos.x >= 6 ? 180 : 0) + CELL_SIZE / 2;
           y = pos.y * CELL_SIZE + (pos.y >= 6 ? 180 : 0) + CELL_SIZE / 2;
         } else {
-          // Fallback
           const angle = (idx * Math.PI * 2) / 4 - Math.PI / 2;
-          x = BOARD_SIZE / 2 + Math.cos(angle) * 25;
-          y = BOARD_SIZE / 2 + Math.sin(angle) * 25;
+          x = BOARD_SIZE / 2 + Math.cos(angle) * 20;
+          y = BOARD_SIZE / 2 + Math.sin(angle) * 20;
         }
 
-        // Check for stacking (multiple tokens on same position)
+        // Check for stacking
         let stackOffset = 0;
         if (token.position !== 'home' && !token.finished) {
           const tokensOnSameCell = playerTokens.tokens.filter(
             (t, i) => i < idx && t.position === token.position && !t.finished
           ).length;
-          stackOffset = tokensOnSameCell * 8;
+          stackOffset = tokensOnSameCell * 6;
         }
 
-        // Shadow (soft and realistic)
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
-        ctx.shadowBlur = 8;
-        ctx.shadowOffsetX = 3;
-        ctx.shadowOffsetY = 3;
-        
+        // Simple shadow
         ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
         ctx.beginPath();
         ctx.arc(x + stackOffset + 2, y + 2, TOKEN_RADIUS, 0, Math.PI * 2);
         ctx.fill();
-        
-        ctx.shadowColor = 'transparent';
-        ctx.shadowBlur = 0;
 
-        // Token base with gradient (3D effect)
-        const tokenGradient = ctx.createRadialGradient(
-          x + stackOffset - TOKEN_RADIUS / 3, 
-          y - TOKEN_RADIUS / 3, 
-          0,
-          x + stackOffset, 
-          y, 
-          TOKEN_RADIUS
-        );
-        tokenGradient.addColorStop(0, COLORS[color + 'Light'] || COLORS[color]);
-        tokenGradient.addColorStop(0.6, COLORS[color]);
-        tokenGradient.addColorStop(1, COLORS[color + 'Dark'] || COLORS[color]);
-        
-        ctx.fillStyle = tokenGradient;
+        // Token - solid color (matching reference image)
+        ctx.fillStyle = COLORS['token' + color.charAt(0).toUpperCase() + color.slice(1)];
         ctx.beginPath();
         ctx.arc(x + stackOffset, y, TOKEN_RADIUS, 0, Math.PI * 2);
         ctx.fill();
 
-        // Glossy highlight (top-left)
-        const highlightGradient = ctx.createRadialGradient(
-          x + stackOffset - TOKEN_RADIUS / 4,
-          y - TOKEN_RADIUS / 4,
-          0,
-          x + stackOffset - TOKEN_RADIUS / 4,
-          y - TOKEN_RADIUS / 4,
-          TOKEN_RADIUS / 2
-        );
-        highlightGradient.addColorStop(0, 'rgba(255, 255, 255, 0.6)');
-        highlightGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-        
-        ctx.fillStyle = highlightGradient;
-        ctx.beginPath();
-        ctx.arc(x + stackOffset, y, TOKEN_RADIUS, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Border (darker for depth)
-        ctx.strokeStyle = COLORS[color + 'Dark'] || COLORS.black;
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.arc(x + stackOffset, y, TOKEN_RADIUS, 0, Math.PI * 2);
+        // Black border
+        ctx.strokeStyle = COLORS.black;
+        ctx.lineWidth = 2;
         ctx.stroke();
 
-        // Number with shadow
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-        ctx.shadowBlur = 3;
-        ctx.shadowOffsetX = 1;
-        ctx.shadowOffsetY = 1;
-        
-        ctx.fillStyle = COLORS.white;
-        ctx.font = 'bold 16px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(idx + 1, x + stackOffset, y);
-        
-        ctx.shadowColor = 'transparent';
-        ctx.shadowBlur = 0;
-
-        // Highlight available moves with animated glow
+        // Highlight available moves
         if (availableMoves.includes(idx) && gameState.currentPlayer?.id === currentUserId) {
-          // Outer glow
           ctx.strokeStyle = '#00FF00';
-          ctx.lineWidth = 5;
-          ctx.shadowColor = 'rgba(0, 255, 0, 0.8)';
-          ctx.shadowBlur = 15;
+          ctx.lineWidth = 4;
           ctx.beginPath();
-          ctx.arc(x + stackOffset, y, TOKEN_RADIUS + 8, 0, Math.PI * 2);
+          ctx.arc(x + stackOffset, y, TOKEN_RADIUS + 6, 0, Math.PI * 2);
           ctx.stroke();
-          
-          // Inner glow (pulsing effect)
-          ctx.strokeStyle = 'rgba(0, 255, 0, 0.5)';
-          ctx.lineWidth = 3;
-          ctx.shadowBlur = 10;
-          ctx.beginPath();
-          ctx.arc(x + stackOffset, y, TOKEN_RADIUS + 12, 0, Math.PI * 2);
-          ctx.stroke();
-          
-          ctx.shadowColor = 'transparent';
-          ctx.shadowBlur = 0;
         }
       });
     });
