@@ -1,4 +1,35 @@
-// Classic 4-Player Ludo Game Engine - Full Spec Implementation
+// Classic 4-Player Ludo Game Engine - Ludo King Style Rules
+// 
+// OFFICIAL LUDO KING RULES:
+// ========================
+// 1. DICE & TURNS:
+//    - Roll 1-6 on dice
+//    - Rolling 6 gives extra turn
+//    - Three consecutive 6s = turn forfeited (no move on 3rd six)
+//    - Capturing opponent token = bonus turn (extra roll)
+//
+// 2. TOKEN MOVEMENT:
+//    - Need 6 to move token out of home base
+//    - Tokens move clockwise around 52-cell main path
+//    - After completing circuit, enter colored home path (6 cells)
+//    - Must reach exact finish position (no overshoot)
+//
+// 3. SAFE SPOTS:
+//    - Starting squares (positions 0, 13, 26, 39) are safe
+//    - Star squares (8, 21, 34, 47) are safe
+//    - Tokens on safe spots cannot be captured
+//    - Home path is always safe
+//
+// 4. CAPTURE/KILL:
+//    - Landing on opponent's token sends it back to base
+//    - Cannot capture on safe spots
+//    - Stacked tokens (same color, same cell) are protected
+//    - Capturing gives bonus turn
+//
+// 5. WINNING:
+//    - First player to get all 4 tokens to finish wins
+//    - Tokens must complete full circuit + home path
+//
 const COLORS = ['red', 'green', 'yellow', 'blue'];
 const TOKENS_PER_PLAYER = 4;
 const MAIN_PATH_LENGTH = 52;
@@ -203,7 +234,7 @@ class LudoGameEngine {
       this.gameState = 'finished';
     }
 
-    // TURN RULES
+    // TURN RULES (Ludo King style)
     let extraTurn = false;
     let reason = '';
 
@@ -221,6 +252,12 @@ class LudoGameEngine {
       }
     } else {
       this.consecutiveSixes = 0;
+      
+      // BONUS TURN: Capturing opponent token gives extra turn (Ludo King rule)
+      if (captured.length > 0) {
+        extraTurn = true;
+        reason = 'captured_token';
+      }
     }
 
     // Move to next turn if no extra turn
