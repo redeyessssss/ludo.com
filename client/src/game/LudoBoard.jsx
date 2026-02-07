@@ -117,20 +117,20 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     };
   };
 
-  // Home positions for tokens (in colored home areas)
+  // Home positions for tokens (in colored home areas) - updated for 15x15 grid
   const getHomePositions = (color) => {
     const homes = {
       red: [
-        { x: 1.5, y: 1.5 }, { x: 4, y: 1.5 }, { x: 1.5, y: 4 }, { x: 4, y: 4 }
+        { x: 2, y: 2 }, { x: 4, y: 2 }, { x: 2, y: 4 }, { x: 4, y: 4 }
       ],
       green: [
-        { x: 8, y: 1.5 }, { x: 10.5, y: 1.5 }, { x: 8, y: 4 }, { x: 10.5, y: 4 }
-      ],
-      yellow: [
-        { x: 1.5, y: 8 }, { x: 4, y: 8 }, { x: 1.5, y: 10.5 }, { x: 4, y: 10.5 }
+        { x: 10, y: 2 }, { x: 12, y: 2 }, { x: 10, y: 4 }, { x: 12, y: 4 }
       ],
       blue: [
-        { x: 8, y: 8 }, { x: 10.5, y: 8 }, { x: 8, y: 10.5 }, { x: 10.5, y: 10.5 }
+        { x: 2, y: 10 }, { x: 4, y: 10 }, { x: 2, y: 12 }, { x: 4, y: 12 }
+      ],
+      yellow: [
+        { x: 10, y: 10 }, { x: 12, y: 10 }, { x: 10, y: 12 }, { x: 12, y: 12 }
       ],
     };
     return homes[color] || [];
@@ -142,11 +142,14 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     ctx.fillStyle = COLORS.white;
     ctx.fillRect(0, 0, BOARD_SIZE, BOARD_SIZE);
 
-    // Draw all white cells first (13x13 grid)
-    for (let row = 0; row < 13; row++) {
-      for (let col = 0; col < 13; col++) {
-        const x = col * CELL_SIZE + (col >= 6 ? 180 : 0);
-        const y = row * CELL_SIZE + (row >= 6 ? 180 : 0);
+    // Draw the complete 15x15 grid structure
+    // The board is divided into: 6 cells + 3 cells (center) + 6 cells = 15 cells
+    
+    // Draw all cells with black borders
+    for (let row = 0; row < 15; row++) {
+      for (let col = 0; col < 15; col++) {
+        const x = col * CELL_SIZE;
+        const y = row * CELL_SIZE;
         
         ctx.fillStyle = COLORS.white;
         ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
@@ -158,98 +161,92 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
       }
     }
 
-    // Draw home areas (large colored squares in corners)
+    // Draw home areas (large colored squares in corners) - 6x6 cells each
     // RED (top-left)
     ctx.fillStyle = COLORS.red;
-    ctx.fillRect(0, 0, 360, 360);
+    ctx.fillRect(0, 0, 6 * CELL_SIZE, 6 * CELL_SIZE);
+    // White inner area (4x4 cells)
     ctx.fillStyle = COLORS.white;
-    ctx.fillRect(30, 30, 300, 300);
+    ctx.fillRect(CELL_SIZE, CELL_SIZE, 4 * CELL_SIZE, 4 * CELL_SIZE);
     ctx.strokeStyle = COLORS.black;
     ctx.lineWidth = 3;
-    ctx.strokeRect(0, 0, 360, 360);
-    ctx.strokeRect(30, 30, 300, 300);
+    ctx.strokeRect(0, 0, 6 * CELL_SIZE, 6 * CELL_SIZE);
+    ctx.strokeRect(CELL_SIZE, CELL_SIZE, 4 * CELL_SIZE, 4 * CELL_SIZE);
     
     // GREEN (top-right)
     ctx.fillStyle = COLORS.green;
-    ctx.fillRect(540, 0, 360, 360);
+    ctx.fillRect(9 * CELL_SIZE, 0, 6 * CELL_SIZE, 6 * CELL_SIZE);
+    // White inner area
     ctx.fillStyle = COLORS.white;
-    ctx.fillRect(570, 30, 300, 300);
+    ctx.fillRect(10 * CELL_SIZE, CELL_SIZE, 4 * CELL_SIZE, 4 * CELL_SIZE);
     ctx.strokeStyle = COLORS.black;
     ctx.lineWidth = 3;
-    ctx.strokeRect(540, 0, 360, 360);
-    ctx.strokeRect(570, 30, 300, 300);
+    ctx.strokeRect(9 * CELL_SIZE, 0, 6 * CELL_SIZE, 6 * CELL_SIZE);
+    ctx.strokeRect(10 * CELL_SIZE, CELL_SIZE, 4 * CELL_SIZE, 4 * CELL_SIZE);
     
     // BLUE (bottom-left)
     ctx.fillStyle = COLORS.blue;
-    ctx.fillRect(0, 540, 360, 360);
+    ctx.fillRect(0, 9 * CELL_SIZE, 6 * CELL_SIZE, 6 * CELL_SIZE);
+    // White inner area
     ctx.fillStyle = COLORS.white;
-    ctx.fillRect(30, 570, 300, 300);
+    ctx.fillRect(CELL_SIZE, 10 * CELL_SIZE, 4 * CELL_SIZE, 4 * CELL_SIZE);
     ctx.strokeStyle = COLORS.black;
     ctx.lineWidth = 3;
-    ctx.strokeRect(0, 540, 360, 360);
-    ctx.strokeRect(30, 570, 300, 300);
+    ctx.strokeRect(0, 9 * CELL_SIZE, 6 * CELL_SIZE, 6 * CELL_SIZE);
+    ctx.strokeRect(CELL_SIZE, 10 * CELL_SIZE, 4 * CELL_SIZE, 4 * CELL_SIZE);
     
     // YELLOW (bottom-right)
     ctx.fillStyle = COLORS.yellow;
-    ctx.fillRect(540, 540, 360, 360);
+    ctx.fillRect(9 * CELL_SIZE, 9 * CELL_SIZE, 6 * CELL_SIZE, 6 * CELL_SIZE);
+    // White inner area
     ctx.fillStyle = COLORS.white;
-    ctx.fillRect(570, 570, 300, 300);
+    ctx.fillRect(10 * CELL_SIZE, 10 * CELL_SIZE, 4 * CELL_SIZE, 4 * CELL_SIZE);
     ctx.strokeStyle = COLORS.black;
     ctx.lineWidth = 3;
-    ctx.strokeRect(540, 540, 360, 360);
-    ctx.strokeRect(570, 570, 300, 300);
+    ctx.strokeRect(9 * CELL_SIZE, 9 * CELL_SIZE, 6 * CELL_SIZE, 6 * CELL_SIZE);
+    ctx.strokeRect(10 * CELL_SIZE, 10 * CELL_SIZE, 4 * CELL_SIZE, 4 * CELL_SIZE);
 
-    // Draw home paths (colored paths leading to center)
-    const homePaths = getHomePaths();
-    
-    // RED home path
+    // Draw home paths (colored columns/rows leading to center)
+    // RED home path (horizontal - row 7, columns 1-6)
     ctx.fillStyle = COLORS.red;
-    homePaths.red.forEach(pos => {
-      const x = pos.x * CELL_SIZE + (pos.x >= 6 ? 180 : 0);
-      const y = pos.y * CELL_SIZE + (pos.y >= 6 ? 180 : 0);
-      ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
+    for (let col = 1; col <= 6; col++) {
+      ctx.fillRect(col * CELL_SIZE, 7 * CELL_SIZE, CELL_SIZE, CELL_SIZE);
       ctx.strokeStyle = COLORS.black;
       ctx.lineWidth = 2;
-      ctx.strokeRect(x, y, CELL_SIZE, CELL_SIZE);
-    });
+      ctx.strokeRect(col * CELL_SIZE, 7 * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+    }
     
-    // GREEN home path
+    // GREEN home path (vertical - column 7, rows 1-6)
     ctx.fillStyle = COLORS.green;
-    homePaths.green.forEach(pos => {
-      const x = pos.x * CELL_SIZE + (pos.x >= 6 ? 180 : 0);
-      const y = pos.y * CELL_SIZE + (pos.y >= 6 ? 180 : 0);
-      ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
+    for (let row = 1; row <= 6; row++) {
+      ctx.fillRect(7 * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
       ctx.strokeStyle = COLORS.black;
       ctx.lineWidth = 2;
-      ctx.strokeRect(x, y, CELL_SIZE, CELL_SIZE);
-    });
+      ctx.strokeRect(7 * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+    }
     
-    // BLUE home path
+    // BLUE home path (horizontal - row 7, columns 8-13)
     ctx.fillStyle = COLORS.blue;
-    homePaths.blue.forEach(pos => {
-      const x = pos.x * CELL_SIZE + (pos.x >= 6 ? 180 : 0);
-      const y = pos.y * CELL_SIZE + (pos.y >= 6 ? 180 : 0);
-      ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
+    for (let col = 8; col <= 13; col++) {
+      ctx.fillRect(col * CELL_SIZE, 7 * CELL_SIZE, CELL_SIZE, CELL_SIZE);
       ctx.strokeStyle = COLORS.black;
       ctx.lineWidth = 2;
-      ctx.strokeRect(x, y, CELL_SIZE, CELL_SIZE);
-    });
+      ctx.strokeRect(col * CELL_SIZE, 7 * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+    }
     
-    // YELLOW home path
+    // YELLOW home path (vertical - column 7, rows 8-13)
     ctx.fillStyle = COLORS.yellow;
-    homePaths.yellow.forEach(pos => {
-      const x = pos.x * CELL_SIZE + (pos.x >= 6 ? 180 : 0);
-      const y = pos.y * CELL_SIZE + (pos.y >= 6 ? 180 : 0);
-      ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
+    for (let row = 8; row <= 13; row++) {
+      ctx.fillRect(7 * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
       ctx.strokeStyle = COLORS.black;
       ctx.lineWidth = 2;
-      ctx.strokeRect(x, y, CELL_SIZE, CELL_SIZE);
-    });
+      ctx.strokeRect(7 * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+    }
 
-    // Center finish area with 4 colored triangles
-    const centerX = BOARD_SIZE / 2;
-    const centerY = BOARD_SIZE / 2;
-    const triangleSize = 90;
+    // Center finish area with 4 colored triangles (3x3 cells in the middle)
+    const centerX = 7.5 * CELL_SIZE;
+    const centerY = 7.5 * CELL_SIZE;
+    const triangleSize = 1.5 * CELL_SIZE;
     
     // RED triangle (left)
     ctx.fillStyle = COLORS.red;
@@ -302,7 +299,7 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     // Center white circle
     ctx.fillStyle = COLORS.white;
     ctx.beginPath();
-    ctx.arc(centerX, centerY, 35, 0, Math.PI * 2);
+    ctx.arc(centerX, centerY, CELL_SIZE * 0.6, 0, Math.PI * 2);
     ctx.fill();
     ctx.strokeStyle = COLORS.black;
     ctx.lineWidth = 2;
@@ -327,34 +324,34 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
         if (token.position === 'home') {
           // Token in home area
           const homePos = getHomePositions(color)[idx];
-          x = homePos.x * CELL_SIZE + (homePos.x >= 6 ? 180 : 0);
-          y = homePos.y * CELL_SIZE + (homePos.y >= 6 ? 180 : 0);
+          x = homePos.x * CELL_SIZE + CELL_SIZE / 2;
+          y = homePos.y * CELL_SIZE + CELL_SIZE / 2;
         } else if (token.finished) {
           // Token finished - place in center
           const angle = (idx * Math.PI * 2) / 4 - Math.PI / 2;
-          x = BOARD_SIZE / 2 + Math.cos(angle) * 20;
-          y = BOARD_SIZE / 2 + Math.sin(angle) * 20;
+          x = 7.5 * CELL_SIZE + Math.cos(angle) * 20;
+          y = 7.5 * CELL_SIZE + Math.sin(angle) * 20;
         } else if (token.position >= config.homeStart) {
           // Token in home path
           const homePathIndex = token.position - config.homeStart;
           if (homePathIndex < HOME_PATH_LENGTH) {
             const pos = homePaths[color][homePathIndex];
-            x = pos.x * CELL_SIZE + (pos.x >= 6 ? 180 : 0) + CELL_SIZE / 2;
-            y = pos.y * CELL_SIZE + (pos.y >= 6 ? 180 : 0) + CELL_SIZE / 2;
+            x = pos.x * CELL_SIZE + CELL_SIZE / 2;
+            y = pos.y * CELL_SIZE + CELL_SIZE / 2;
           } else {
             const angle = (idx * Math.PI * 2) / 4 - Math.PI / 2;
-            x = BOARD_SIZE / 2 + Math.cos(angle) * 20;
-            y = BOARD_SIZE / 2 + Math.sin(angle) * 20;
+            x = 7.5 * CELL_SIZE + Math.cos(angle) * 20;
+            y = 7.5 * CELL_SIZE + Math.sin(angle) * 20;
           }
         } else if (token.position >= 0 && token.position < MAIN_PATH_LENGTH) {
           // Token on main path
           const pos = mainPath[token.position];
-          x = pos.x * CELL_SIZE + (pos.x >= 6 ? 180 : 0) + CELL_SIZE / 2;
-          y = pos.y * CELL_SIZE + (pos.y >= 6 ? 180 : 0) + CELL_SIZE / 2;
+          x = pos.x * CELL_SIZE + CELL_SIZE / 2;
+          y = pos.y * CELL_SIZE + CELL_SIZE / 2;
         } else {
           const angle = (idx * Math.PI * 2) / 4 - Math.PI / 2;
-          x = BOARD_SIZE / 2 + Math.cos(angle) * 20;
-          y = BOARD_SIZE / 2 + Math.sin(angle) * 20;
+          x = 7.5 * CELL_SIZE + Math.cos(angle) * 20;
+          y = 7.5 * CELL_SIZE + Math.sin(angle) * 20;
         }
 
         // Check for stacking
@@ -427,31 +424,31 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
 
       if (token.position === 'home') {
         const homePos = getHomePositions(color)[idx];
-        tokenX = homePos.x * CELL_SIZE + (homePos.x >= 6 ? 180 : 0);
-        tokenY = homePos.y * CELL_SIZE + (homePos.y >= 6 ? 180 : 0);
+        tokenX = homePos.x * CELL_SIZE + CELL_SIZE / 2;
+        tokenY = homePos.y * CELL_SIZE + CELL_SIZE / 2;
       } else if (token.finished) {
         const angle = (idx * Math.PI * 2) / 4 - Math.PI / 2;
-        tokenX = BOARD_SIZE / 2 + Math.cos(angle) * 25;
-        tokenY = BOARD_SIZE / 2 + Math.sin(angle) * 25;
+        tokenX = 7.5 * CELL_SIZE + Math.cos(angle) * 20;
+        tokenY = 7.5 * CELL_SIZE + Math.sin(angle) * 20;
       } else if (token.position >= config.homeStart) {
         const homePathIndex = token.position - config.homeStart;
         if (homePathIndex < HOME_PATH_LENGTH) {
           const pos = homePaths[color][homePathIndex];
-          tokenX = pos.x * CELL_SIZE + (pos.x >= 6 ? 180 : 0) + CELL_SIZE / 2;
-          tokenY = pos.y * CELL_SIZE + (pos.y >= 6 ? 180 : 0) + CELL_SIZE / 2;
+          tokenX = pos.x * CELL_SIZE + CELL_SIZE / 2;
+          tokenY = pos.y * CELL_SIZE + CELL_SIZE / 2;
         } else {
           const angle = (idx * Math.PI * 2) / 4 - Math.PI / 2;
-          tokenX = BOARD_SIZE / 2 + Math.cos(angle) * 25;
-          tokenY = BOARD_SIZE / 2 + Math.sin(angle) * 25;
+          tokenX = 7.5 * CELL_SIZE + Math.cos(angle) * 20;
+          tokenY = 7.5 * CELL_SIZE + Math.sin(angle) * 20;
         }
       } else if (token.position >= 0 && token.position < MAIN_PATH_LENGTH) {
         const pos = mainPath[token.position];
-        tokenX = pos.x * CELL_SIZE + (pos.x >= 6 ? 180 : 0) + CELL_SIZE / 2;
-        tokenY = pos.y * CELL_SIZE + (pos.y >= 6 ? 180 : 0) + CELL_SIZE / 2;
+        tokenX = pos.x * CELL_SIZE + CELL_SIZE / 2;
+        tokenY = pos.y * CELL_SIZE + CELL_SIZE / 2;
       } else {
         const angle = (idx * Math.PI * 2) / 4 - Math.PI / 2;
-        tokenX = BOARD_SIZE / 2 + Math.cos(angle) * 25;
-        tokenY = BOARD_SIZE / 2 + Math.sin(angle) * 25;
+        tokenX = 7.5 * CELL_SIZE + Math.cos(angle) * 20;
+        tokenY = 7.5 * CELL_SIZE + Math.sin(angle) * 20;
       }
 
       // Check for stacking offset
@@ -460,7 +457,7 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
         const tokensOnSameCell = playerTokens.tokens.filter(
           (t, i) => i < idx && t.position === token.position && !t.finished
         ).length;
-        stackOffset = tokensOnSameCell * 8;
+        stackOffset = tokensOnSameCell * 6;
       }
 
       const distance = Math.sqrt((x - (tokenX + stackOffset)) ** 2 + (y - tokenY) ** 2);
