@@ -142,22 +142,67 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     ctx.fillStyle = COLORS.white;
     ctx.fillRect(0, 0, BOARD_SIZE, BOARD_SIZE);
 
-    // Draw the complete 15x15 grid structure
-    // The board is divided into: 6 cells + 3 cells (center) + 6 cells = 15 cells
+    // First, draw the path cells ONLY in the cross-shaped area (not overlapping home boxes)
+    // The board layout is:
+    // - 4 corner boxes (6x6 cells each)
+    // - Cross-shaped path area in the middle (3 columns wide, 3 rows tall)
     
-    // Draw all cells with black borders
-    for (let row = 0; row < 15; row++) {
-      for (let col = 0; col < 15; col++) {
-        const x = col * CELL_SIZE;
-        const y = row * CELL_SIZE;
-        
+    // Draw vertical path cells (left side - column 0)
+    for (let row = 6; row <= 8; row++) {
+      ctx.fillStyle = COLORS.white;
+      ctx.fillRect(0, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+      ctx.strokeStyle = COLORS.black;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(0, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+    }
+    
+    // Draw horizontal path cells (top side - row 0)
+    for (let col = 6; col <= 8; col++) {
+      ctx.fillStyle = COLORS.white;
+      ctx.fillRect(col * CELL_SIZE, 0, CELL_SIZE, CELL_SIZE);
+      ctx.strokeStyle = COLORS.black;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(col * CELL_SIZE, 0, CELL_SIZE, CELL_SIZE);
+    }
+    
+    // Draw vertical path cells (right side - column 14)
+    for (let row = 6; row <= 8; row++) {
+      ctx.fillStyle = COLORS.white;
+      ctx.fillRect(14 * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+      ctx.strokeStyle = COLORS.black;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(14 * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+    }
+    
+    // Draw horizontal path cells (bottom side - row 14)
+    for (let col = 6; col <= 8; col++) {
+      ctx.fillStyle = COLORS.white;
+      ctx.fillRect(col * CELL_SIZE, 14 * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+      ctx.strokeStyle = COLORS.black;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(col * CELL_SIZE, 14 * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+    }
+    
+    // Draw the cross-shaped middle area (rows 6-8, cols 1-13 and cols 6-8, rows 1-13)
+    // Horizontal bar
+    for (let col = 1; col <= 13; col++) {
+      for (let row = 6; row <= 8; row++) {
         ctx.fillStyle = COLORS.white;
-        ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
-        
-        // Black grid lines
+        ctx.fillRect(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
         ctx.strokeStyle = COLORS.black;
         ctx.lineWidth = 2;
-        ctx.strokeRect(x, y, CELL_SIZE, CELL_SIZE);
+        ctx.strokeRect(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+      }
+    }
+    
+    // Vertical bar
+    for (let col = 6; col <= 8; col++) {
+      for (let row = 1; row <= 13; row++) {
+        ctx.fillStyle = COLORS.white;
+        ctx.fillRect(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+        ctx.strokeStyle = COLORS.black;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
       }
     }
 
