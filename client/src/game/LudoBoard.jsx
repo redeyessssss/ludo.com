@@ -1,11 +1,23 @@
 import { useEffect, useRef } from 'react';
 
+// CONSTANTS & CONFIG
+const MAIN_PATH_LENGTH = 52;
+const SAFE_CELLS = [0, 8, 13, 21, 26, 34, 39, 47];
+const PLAYER_CONFIG = {
+  red:    { start: 0,  entry: 50, homeStart: 100 },
+  green:  { start: 13, entry: 11, homeStart: 200 },
+  yellow: { start: 26, entry: 24, homeStart: 300 },
+  blue:   { start: 39, entry: 37, homeStart: 400 }
+};
+const HOME_PATH_LENGTH = 6;
+const FINISH_OFFSET = 5;
+
 export default function LudoBoard({ gameState, onTokenClick, currentUserId, availableMoves = [] }) {
   const canvasRef = useRef(null);
 
   const BOARD_SIZE = 900;
   const CELL_SIZE = 60;
-  const TOKEN_RADIUS = 22;
+  const TOKEN_RADIUS = 20;
   
   const COLORS = {
     red: '#E53935',
@@ -15,14 +27,14 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     white: '#FFFFFF',
     black: '#000000',
     lightGray: '#F5F5F5',
+    safeGold: '#FFD700',
   };
 
-  // Traditional Ludo board is 15x15 grid
-  // Get board path (52 cells) - clockwise from red start
-  const getBoardPath = () => {
+  // Get the 52-cell main path (clockwise from red start)
+  const getMainPath = () => {
     const path = [];
     
-    // RED START - Position 0 (row 6, col 1)
+    // RED START (position 0) - row 6, col 1
     path.push({ x: 1, y: 6 });
     
     // Left column going UP (positions 1-5)
@@ -30,66 +42,56 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
       path.push({ x: 0, y: i });
     }
     
-    // Top-left corner going RIGHT (positions 6-7)
-    path.push({ x: 1, y: 0 });
-    path.push({ x: 2, y: 0 });
-    path.push({ x: 3, y: 0 });
-    path.push({ x: 4, y: 0 });
-    path.push({ x: 5, y: 0 });
+    // Top row going RIGHT (positions 6-12)
+    for (let i = 0; i <= 6; i++) {
+      path.push({ x: i, y: 0 });
+    }
     
-    // GREEN START - Position 13 (row 0, col 6)
-    path.push({ x: 6, y: 0 });
+    // GREEN START (position 13) - row 0, col 7
     
-    // Top row going RIGHT (positions 14-18)
-    path.push({ x: 7, y: 0 });
-    path.push({ x: 8, y: 0 });
-    path.push({ x: 9, y: 0 });
-    path.push({ x: 10, y: 0 });
-    path.push({ x: 11, y: 0 });
-    path.push({ x: 12, y: 0 });
+    // Top row continuing RIGHT (positions 14-18)
+    for (let i = 7; i <= 11; i++) {
+      path.push({ x: i, y: 0 });
+    }
     
     // Top-right corner going DOWN (positions 19-20)
-    path.push({ x: 12, y: 1 });
-    path.push({ x: 12, y: 2 });
-    path.push({ x: 12, y: 3 });
-    path.push({ x: 12, y: 4 });
-    path.push({ x: 12, y: 5 });
+    path.push({ x: 12, y: 0 });
     
-    // BLUE START - Position 26 (row 6, col 12)
+    // Right column going DOWN (positions 21-25)
+    for (let i = 1; i <= 5; i++) {
+      path.push({ x: 12, y: i });
+    }
+    
+    // BLUE START (position 26) - row 6, col 12
     path.push({ x: 12, y: 6 });
     
-    // Right column going DOWN (positions 27-31)
-    path.push({ x: 12, y: 7 });
-    path.push({ x: 12, y: 8 });
-    path.push({ x: 12, y: 9 });
-    path.push({ x: 12, y: 10 });
-    path.push({ x: 12, y: 11 });
+    // Right column continuing DOWN (positions 27-31)
+    for (let i = 7; i <= 11; i++) {
+      path.push({ x: 12, y: i });
+    }
+    
+    // Bottom-right corner going LEFT (positions 32)
     path.push({ x: 12, y: 12 });
     
-    // Bottom-right corner going LEFT (positions 32-33)
-    path.push({ x: 11, y: 12 });
-    path.push({ x: 10, y: 12 });
-    path.push({ x: 9, y: 12 });
-    path.push({ x: 8, y: 12 });
-    path.push({ x: 7, y: 12 });
+    // Bottom row going LEFT (positions 33-38)
+    for (let i = 11; i >= 7; i--) {
+      path.push({ x: i, y: 12 });
+    }
     
-    // YELLOW START - Position 39 (row 12, col 6)
-    path.push({ x: 6, y: 12 });
+    // YELLOW START (position 39) - row 12, col 6
     
-    // Bottom row going LEFT (positions 40-44)
-    path.push({ x: 5, y: 12 });
-    path.push({ x: 4, y: 12 });
-    path.push({ x: 3, y: 12 });
-    path.push({ x: 2, y: 12 });
-    path.push({ x: 1, y: 12 });
+    // Bottom row continuing LEFT (positions 40-45)
+    for (let i = 6; i >= 1; i--) {
+      path.push({ x: i, y: 12 });
+    }
+    
+    // Bottom-left corner going UP (positions 46)
     path.push({ x: 0, y: 12 });
     
-    // Bottom-left corner going UP (positions 45-51)
-    path.push({ x: 0, y: 11 });
-    path.push({ x: 0, y: 10 });
-    path.push({ x: 0, y: 9 });
-    path.push({ x: 0, y: 8 });
-    path.push({ x: 0, y: 7 });
+    // Left column going UP back to start (positions 47-51)
+    for (let i = 11; i >= 7; i--) {
+      path.push({ x: 0, y: i });
+    }
     
     return path;
   };
@@ -98,16 +100,16 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
   const getHomePaths = () => {
     return {
       red: [
-        { x: 1, y: 6 }, { x: 2, y: 6 }, { x: 3, y: 6 }, { x: 4, y: 6 }, { x: 5, y: 6 }
+        { x: 1, y: 6 }, { x: 2, y: 6 }, { x: 3, y: 6 }, { x: 4, y: 6 }, { x: 5, y: 6 }, { x: 6, y: 6 }
       ],
       green: [
-        { x: 6, y: 1 }, { x: 6, y: 2 }, { x: 6, y: 3 }, { x: 6, y: 4 }, { x: 6, y: 5 }
-      ],
-      blue: [
-        { x: 11, y: 6 }, { x: 10, y: 6 }, { x: 9, y: 6 }, { x: 8, y: 6 }, { x: 7, y: 6 }
+        { x: 6, y: 1 }, { x: 6, y: 2 }, { x: 6, y: 3 }, { x: 6, y: 4 }, { x: 6, y: 5 }, { x: 6, y: 6 }
       ],
       yellow: [
-        { x: 6, y: 11 }, { x: 6, y: 10 }, { x: 6, y: 9 }, { x: 6, y: 8 }, { x: 6, y: 7 }
+        { x: 6, y: 11 }, { x: 6, y: 10 }, { x: 6, y: 9 }, { x: 6, y: 8 }, { x: 6, y: 7 }, { x: 6, y: 6 }
+      ],
+      blue: [
+        { x: 11, y: 6 }, { x: 10, y: 6 }, { x: 9, y: 6 }, { x: 8, y: 6 }, { x: 7, y: 6 }, { x: 6, y: 6 }
       ],
     };
   };
@@ -121,32 +123,29 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
       green: [
         { x: 8, y: 1.5 }, { x: 10.5, y: 1.5 }, { x: 8, y: 4 }, { x: 10.5, y: 4 }
       ],
-      blue: [
-        { x: 8, y: 8 }, { x: 10.5, y: 8 }, { x: 8, y: 10.5 }, { x: 10.5, y: 10.5 }
-      ],
       yellow: [
         { x: 1.5, y: 8 }, { x: 4, y: 8 }, { x: 1.5, y: 10.5 }, { x: 4, y: 10.5 }
+      ],
+      blue: [
+        { x: 8, y: 8 }, { x: 10.5, y: 8 }, { x: 8, y: 10.5 }, { x: 10.5, y: 10.5 }
       ],
     };
     return homes[color] || [];
   };
 
-  // Safe positions (star positions) - starting positions for each color
-  const getSafePositions = () => [0, 8, 13, 21, 26, 34, 39, 47];
-
-  // Draw board
+  // Draw the 15x15 grid board
   const drawBoard = (ctx) => {
     // Background
     ctx.fillStyle = COLORS.lightGray;
     ctx.fillRect(0, 0, BOARD_SIZE, BOARD_SIZE);
 
-    // Draw 15x15 grid
+    // Draw 13x13 visible grid (excluding center cross)
     for (let row = 0; row < 13; row++) {
       for (let col = 0; col < 13; col++) {
         const x = col * CELL_SIZE + (col >= 6 ? 180 : 0);
         const y = row * CELL_SIZE + (row >= 6 ? 180 : 0);
         
-        // Default white cells
+        // White cells for path
         ctx.fillStyle = COLORS.white;
         ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
         ctx.strokeStyle = COLORS.black;
@@ -176,16 +175,6 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     ctx.strokeRect(540, 0, 360, 360);
     ctx.strokeRect(580, 40, 280, 280);
     
-    // Blue (bottom-right)
-    ctx.fillStyle = COLORS.blue;
-    ctx.fillRect(540, 540, 360, 360);
-    ctx.fillStyle = COLORS.white;
-    ctx.fillRect(580, 580, 280, 280);
-    ctx.strokeStyle = COLORS.black;
-    ctx.lineWidth = 4;
-    ctx.strokeRect(540, 540, 360, 360);
-    ctx.strokeRect(580, 580, 280, 280);
-    
     // Yellow (bottom-left)
     ctx.fillStyle = COLORS.yellow;
     ctx.fillRect(0, 540, 360, 360);
@@ -195,12 +184,22 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     ctx.lineWidth = 4;
     ctx.strokeRect(0, 540, 360, 360);
     ctx.strokeRect(40, 580, 280, 280);
+    
+    // Blue (bottom-right)
+    ctx.fillStyle = COLORS.blue;
+    ctx.fillRect(540, 540, 360, 360);
+    ctx.fillStyle = COLORS.white;
+    ctx.fillRect(580, 580, 280, 280);
+    ctx.strokeStyle = COLORS.black;
+    ctx.lineWidth = 4;
+    ctx.strokeRect(540, 540, 360, 360);
+    ctx.strokeRect(580, 580, 280, 280);
 
     // Draw home paths (colored paths leading to center)
     const homePaths = getHomePaths();
     Object.keys(homePaths).forEach(color => {
       ctx.fillStyle = COLORS[color];
-      homePaths[color].forEach(pos => {
+      homePaths[color].forEach((pos, idx) => {
         const x = pos.x * CELL_SIZE + (pos.x >= 6 ? 180 : 0);
         const y = pos.y * CELL_SIZE + (pos.y >= 6 ? 180 : 0);
         ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
@@ -210,36 +209,34 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
       });
     });
 
-    // Draw main path with safe spots
-    const path = getBoardPath();
-    const safePositions = getSafePositions();
-
-    path.forEach((pos, idx) => {
+    // Draw main path with safe spots (stars)
+    const mainPath = getMainPath();
+    mainPath.forEach((pos, idx) => {
       const x = pos.x * CELL_SIZE + (pos.x >= 6 ? 180 : 0);
       const y = pos.y * CELL_SIZE + (pos.y >= 6 ? 180 : 0);
       
-      // Cell border
+      // Border
       ctx.strokeStyle = COLORS.black;
       ctx.lineWidth = 2;
       ctx.strokeRect(x, y, CELL_SIZE, CELL_SIZE);
 
-      // Safe spot (star) - draw on starting positions
-      if (safePositions.includes(idx)) {
-        ctx.fillStyle = '#FFD700';
-        ctx.font = 'bold 32px Arial';
+      // Safe cells (stars)
+      if (SAFE_CELLS.includes(idx)) {
+        ctx.fillStyle = COLORS.safeGold;
+        ctx.font = 'bold 36px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('★', x + CELL_SIZE / 2, y + CELL_SIZE / 2);
       }
     });
 
-    // Center finish area (triangle pattern)
+    // Center finish area (triangle pattern with HOME)
     const centerX = BOARD_SIZE / 2;
     const centerY = BOARD_SIZE / 2;
     const triangleSize = 90;
     
-    // Draw colored triangles meeting at center
-    // Red triangle (left, pointing right)
+    // Draw colored triangles
+    // Red triangle (left)
     ctx.fillStyle = COLORS.red;
     ctx.beginPath();
     ctx.moveTo(centerX - triangleSize, centerY - triangleSize);
@@ -251,7 +248,7 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     ctx.lineWidth = 2;
     ctx.stroke();
     
-    // Green triangle (top, pointing down)
+    // Green triangle (top)
     ctx.fillStyle = COLORS.green;
     ctx.beginPath();
     ctx.moveTo(centerX - triangleSize, centerY - triangleSize);
@@ -261,7 +258,7 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     ctx.fill();
     ctx.stroke();
     
-    // Yellow triangle (bottom, pointing up)
+    // Yellow triangle (bottom)
     ctx.fillStyle = COLORS.yellow;
     ctx.beginPath();
     ctx.moveTo(centerX - triangleSize, centerY + triangleSize);
@@ -271,7 +268,7 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     ctx.fill();
     ctx.stroke();
     
-    // Blue triangle (right, pointing left)
+    // Blue triangle (right)
     ctx.fillStyle = COLORS.blue;
     ctx.beginPath();
     ctx.moveTo(centerX + triangleSize, centerY - triangleSize);
@@ -281,59 +278,66 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     ctx.fill();
     ctx.stroke();
     
-    // Center circle with trophy
-    ctx.fillStyle = COLORS.yellow;
+    // Center circle with HOME emoji
+    ctx.fillStyle = COLORS.white;
     ctx.beginPath();
-    ctx.arc(centerX, centerY, 45, 0, Math.PI * 2);
+    ctx.arc(centerX, centerY, 50, 0, Math.PI * 2);
     ctx.fill();
     ctx.strokeStyle = COLORS.black;
     ctx.lineWidth = 3;
     ctx.stroke();
     
-    // Trophy
-    ctx.font = 'bold 36px Arial';
+    // HOME text
+    ctx.font = 'bold 32px Arial';
+    ctx.fillStyle = COLORS.black;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('🏆', centerX, centerY);
+    ctx.fillText('🏠', centerX, centerY);
   };
 
   // Draw tokens
   const drawTokens = (ctx) => {
     if (!gameState || !gameState.tokens) return;
 
-    const path = getBoardPath();
+    const mainPath = getMainPath();
     const homePaths = getHomePaths();
 
     Object.keys(gameState.tokens).forEach(playerId => {
       const playerTokens = gameState.tokens[playerId];
       const color = playerTokens.color;
+      const config = PLAYER_CONFIG[color];
 
       playerTokens.tokens.forEach((token, idx) => {
         let x, y;
 
-        if (token.isHome) {
+        if (token.position === 'home') {
           // Token in home area
           const homePos = getHomePositions(color)[idx];
           x = homePos.x * CELL_SIZE + (homePos.x >= 6 ? 180 : 0);
           y = homePos.y * CELL_SIZE + (homePos.y >= 6 ? 180 : 0);
-        } else if (token.position >= 0 && token.position < 52) {
-          // Token on main path
-          const pos = path[token.position];
-          x = pos.x * CELL_SIZE + (pos.x >= 6 ? 180 : 0) + CELL_SIZE / 2;
-          y = pos.y * CELL_SIZE + (pos.y >= 6 ? 180 : 0) + CELL_SIZE / 2;
-        } else if (token.position >= 52) {
-          // Token in finish area (home path)
-          const homePathIndex = token.position - 52;
-          if (homePathIndex < 5) {
+        } else if (token.finished) {
+          // Token finished - place in center
+          const angle = (idx * Math.PI * 2) / 4 - Math.PI / 2;
+          x = BOARD_SIZE / 2 + Math.cos(angle) * 25;
+          y = BOARD_SIZE / 2 + Math.sin(angle) * 25;
+        } else if (token.position >= config.homeStart) {
+          // Token in home path (colored path to center)
+          const homePathIndex = token.position - config.homeStart;
+          if (homePathIndex < HOME_PATH_LENGTH) {
             const pos = homePaths[color][homePathIndex];
             x = pos.x * CELL_SIZE + (pos.x >= 6 ? 180 : 0) + CELL_SIZE / 2;
             y = pos.y * CELL_SIZE + (pos.y >= 6 ? 180 : 0) + CELL_SIZE / 2;
           } else {
-            // Token finished - place in center
+            // Finished
             const angle = (idx * Math.PI * 2) / 4 - Math.PI / 2;
             x = BOARD_SIZE / 2 + Math.cos(angle) * 25;
             y = BOARD_SIZE / 2 + Math.sin(angle) * 25;
           }
+        } else if (token.position >= 0 && token.position < MAIN_PATH_LENGTH) {
+          // Token on main path
+          const pos = mainPath[token.position];
+          x = pos.x * CELL_SIZE + (pos.x >= 6 ? 180 : 0) + CELL_SIZE / 2;
+          y = pos.y * CELL_SIZE + (pos.y >= 6 ? 180 : 0) + CELL_SIZE / 2;
         } else {
           // Fallback
           const angle = (idx * Math.PI * 2) / 4 - Math.PI / 2;
@@ -341,16 +345,25 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
           y = BOARD_SIZE / 2 + Math.sin(angle) * 25;
         }
 
+        // Check for stacking (multiple tokens on same position)
+        let stackOffset = 0;
+        if (token.position !== 'home' && !token.finished) {
+          const tokensOnSameCell = playerTokens.tokens.filter(
+            (t, i) => i < idx && t.position === token.position && !t.finished
+          ).length;
+          stackOffset = tokensOnSameCell * 8;
+        }
+
         // Shadow
         ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
         ctx.beginPath();
-        ctx.arc(x + 3, y + 3, TOKEN_RADIUS, 0, Math.PI * 2);
+        ctx.arc(x + stackOffset + 3, y + 3, TOKEN_RADIUS, 0, Math.PI * 2);
         ctx.fill();
 
         // Token
         ctx.fillStyle = COLORS[color];
         ctx.beginPath();
-        ctx.arc(x, y, TOKEN_RADIUS, 0, Math.PI * 2);
+        ctx.arc(x + stackOffset, y, TOKEN_RADIUS, 0, Math.PI * 2);
         ctx.fill();
 
         // Border
@@ -360,24 +373,24 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
 
         // Number
         ctx.fillStyle = COLORS.white;
-        ctx.font = 'bold 16px Arial';
+        ctx.font = 'bold 14px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(idx + 1, x, y);
+        ctx.fillText(idx + 1, x + stackOffset, y);
 
         // Highlight available moves
         if (availableMoves.includes(idx) && gameState.currentPlayer?.id === currentUserId) {
           ctx.strokeStyle = '#00FF00';
-          ctx.lineWidth = 5;
+          ctx.lineWidth = 4;
           ctx.beginPath();
-          ctx.arc(x, y, TOKEN_RADIUS + 10, 0, Math.PI * 2);
+          ctx.arc(x + stackOffset, y, TOKEN_RADIUS + 8, 0, Math.PI * 2);
           ctx.stroke();
           
           // Pulsing effect
           ctx.strokeStyle = 'rgba(0, 255, 0, 0.5)';
-          ctx.lineWidth = 3;
+          ctx.lineWidth = 2;
           ctx.beginPath();
-          ctx.arc(x, y, TOKEN_RADIUS + 15, 0, Math.PI * 2);
+          ctx.arc(x + stackOffset, y, TOKEN_RADIUS + 12, 0, Math.PI * 2);
           ctx.stroke();
         }
       });
@@ -406,24 +419,26 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     const playerTokens = gameState.tokens[currentUserId];
     if (!playerTokens) return;
 
-    const path = getBoardPath();
+    const mainPath = getMainPath();
     const homePaths = getHomePaths();
+    const color = playerTokens.color;
+    const config = PLAYER_CONFIG[color];
 
     playerTokens.tokens.forEach((token, idx) => {
       let tokenX, tokenY;
 
-      if (token.isHome) {
-        const homePos = getHomePositions(playerTokens.color)[idx];
+      if (token.position === 'home') {
+        const homePos = getHomePositions(color)[idx];
         tokenX = homePos.x * CELL_SIZE + (homePos.x >= 6 ? 180 : 0);
         tokenY = homePos.y * CELL_SIZE + (homePos.y >= 6 ? 180 : 0);
-      } else if (token.position >= 0 && token.position < 52) {
-        const pos = path[token.position];
-        tokenX = pos.x * CELL_SIZE + (pos.x >= 6 ? 180 : 0) + CELL_SIZE / 2;
-        tokenY = pos.y * CELL_SIZE + (pos.y >= 6 ? 180 : 0) + CELL_SIZE / 2;
-      } else if (token.position >= 52) {
-        const homePathIndex = token.position - 52;
-        if (homePathIndex < 5) {
-          const pos = homePaths[playerTokens.color][homePathIndex];
+      } else if (token.finished) {
+        const angle = (idx * Math.PI * 2) / 4 - Math.PI / 2;
+        tokenX = BOARD_SIZE / 2 + Math.cos(angle) * 25;
+        tokenY = BOARD_SIZE / 2 + Math.sin(angle) * 25;
+      } else if (token.position >= config.homeStart) {
+        const homePathIndex = token.position - config.homeStart;
+        if (homePathIndex < HOME_PATH_LENGTH) {
+          const pos = homePaths[color][homePathIndex];
           tokenX = pos.x * CELL_SIZE + (pos.x >= 6 ? 180 : 0) + CELL_SIZE / 2;
           tokenY = pos.y * CELL_SIZE + (pos.y >= 6 ? 180 : 0) + CELL_SIZE / 2;
         } else {
@@ -431,13 +446,26 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
           tokenX = BOARD_SIZE / 2 + Math.cos(angle) * 25;
           tokenY = BOARD_SIZE / 2 + Math.sin(angle) * 25;
         }
+      } else if (token.position >= 0 && token.position < MAIN_PATH_LENGTH) {
+        const pos = mainPath[token.position];
+        tokenX = pos.x * CELL_SIZE + (pos.x >= 6 ? 180 : 0) + CELL_SIZE / 2;
+        tokenY = pos.y * CELL_SIZE + (pos.y >= 6 ? 180 : 0) + CELL_SIZE / 2;
       } else {
         const angle = (idx * Math.PI * 2) / 4 - Math.PI / 2;
         tokenX = BOARD_SIZE / 2 + Math.cos(angle) * 25;
         tokenY = BOARD_SIZE / 2 + Math.sin(angle) * 25;
       }
 
-      const distance = Math.sqrt((x - tokenX) ** 2 + (y - tokenY) ** 2);
+      // Check for stacking offset
+      let stackOffset = 0;
+      if (token.position !== 'home' && !token.finished) {
+        const tokensOnSameCell = playerTokens.tokens.filter(
+          (t, i) => i < idx && t.position === token.position && !t.finished
+        ).length;
+        stackOffset = tokensOnSameCell * 8;
+      }
+
+      const distance = Math.sqrt((x - (tokenX + stackOffset)) ** 2 + (y - tokenY) ** 2);
       if (distance < TOKEN_RADIUS + 15 && availableMoves.includes(idx)) {
         onTokenClick(idx);
       }

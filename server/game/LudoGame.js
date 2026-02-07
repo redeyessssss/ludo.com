@@ -1,19 +1,19 @@
-// Standard Ludo Game Engine - Following Official Rules
-const COLORS = ['red', 'blue', 'green', 'yellow'];
+// Classic 4-Player Ludo Game Engine - Full Spec Implementation
+const COLORS = ['red', 'green', 'yellow', 'blue'];
 const TOKENS_PER_PLAYER = 4;
-const BOARD_PATH_LENGTH = 52;
-const FINISH_AREA_LENGTH = 5; // 5 colored cells leading to center
-const TOTAL_POSITIONS = BOARD_PATH_LENGTH + FINISH_AREA_LENGTH; // 57 total
+const MAIN_PATH_LENGTH = 52;
+const HOME_PATH_LENGTH = 6;
+const FINISH_OFFSET = 5;
 
-// Safe positions on the board (marked with stars) - starting positions for each color
-const SAFE_POSITIONS = [0, 8, 13, 21, 26, 34, 39, 47];
+// Safe cells where tokens cannot be killed
+const SAFE_CELLS = [0, 8, 13, 21, 26, 34, 39, 47];
 
-// Starting positions for each color on the main path
-const COLOR_START_POSITIONS = {
-  red: 0,
-  green: 13,
-  blue: 26,
-  yellow: 39,
+// Player configuration
+const PLAYER_CONFIG = {
+  red:    { start: 0,  entry: 50, homeStart: 100 },
+  green:  { start: 13, entry: 11, homeStart: 200 },
+  yellow: { start: 26, entry: 24, homeStart: 300 },
+  blue:   { start: 39, entry: 37, homeStart: 400 }
 };
 
 class LudoGameEngine {
@@ -36,10 +36,10 @@ class LudoGameEngine {
       tokens[player.id] = {
         color,
         tokens: [
-          { id: 0, position: -1, isHome: true },
-          { id: 1, position: -1, isHome: true },
-          { id: 2, position: -1, isHome: true },
-          { id: 3, position: -1, isHome: true },
+          { id: 0, position: 'home', finished: false },
+          { id: 1, position: 'home', finished: false },
+          { id: 2, position: 'home', finished: false },
+          { id: 3, position: 'home', finished: false },
         ],
       };
     });
@@ -59,27 +59,17 @@ class LudoGameEngine {
     return stats;
   }
 
+  // DICE LOGIC
   rollDice() {
-    // Standard dice: 1-6 with equal probability
     this.diceValue = Math.floor(Math.random() * 6) + 1;
     return this.diceValue;
   }
 
-  getPlayerStartPosition(playerId) {
-    const color = this.tokens[playerId].color;
-    return COLOR_START_POSITIONS[color];
-  }
-
-  getPlayerFinishEntryPosition(playerId) {
-    // Position where player enters their home path (finish area)
-    const color = this.tokens[playerId].color;
-    const startPos = COLOR_START_POSITIONS[color];
-    // Entry is 51 positions after start (wrapping around)
-    return (startPos + 51) % BOARD_PATH_LENGTH;
-  }
-
+  // TOKEN MOVE VALIDATION
   canMoveToken(playerId, tokenId) {
     const token = this.tokens[playerId].tokens[tokenId];
+    const color = this.tokens[playerId].color;
+    const config = PLAYER_CONFIG[color];
     
     // Check if it's this player's turn
     if (this.players[this.currentPlayerIndex].id !== playerId) {
@@ -91,36 +81,34 @@ class LudoGameEngine {
       return false;
     }
 
-    // Token in home - needs 6 to move out
-    if (token.isHome) {
-      return this.diceValue === 6;
-    }
-
     // Token already finished
-    if (token.position >= TOTAL_POSITIONS) {
+    if (token.finished) {
       return false;
     }
 
-    // Check if move would overshoot finish
-    const finishEntryPos = this.getPlayerFinishEntryPosition(playerId);
-    const startPos = this.getPlayerStartPosition(playerId);
-    
-    if (token.position >= BOARD_PATH_LENGTH) {
-      // Token in finish area - can't overshoot
-      const finishPos = token.position - BOARD_PATH_LENGTH;
-      if (finishPos + this.diceValue > FINISH_AREA_LENGTH) {
-        return false;
+    // Token in home - needs 6 to move out
+    if (token.position === 'home' && this.diceValue !== 6) {
+      return false;
+    }
+
+    // Check if move would overshoot finish in home path
+    if (typeof token.position === 'number' && token.position >= config.homeStart) {
+      const homePosition = token.position - config.homeStart;
+      if (homePosition + this.diceValue > FINISH_OFFSET) {
+        return false; // Would overshoot finish
       }
-    } else {
-      // Token on main path - check if it will enter finish area
-      const relativePos = (token.position - startPos + BOARD_PATH_LENGTH) % BOARD_PATH_LENGTH;
-      const newRelativePos = relativePos + this.diceValue;
+    }
+
+    // Check if entering home path would overshoot
+    if (typeof token.position === 'number' && token.position < config.homeStart) {
+      const current = token.position;
+      const entry = config.entry;
       
-      if (newRelativePos >= 51) {
-        // Will enter finish area
-        const overshoot = newRelativePos - 51;
-        if (overshoot > FINISH_AREA_LENGTH) {
-          return false;
+      // Check if this move will enter home path
+      if (current <= entry && current + this.diceValue > entry) {
+        const stepsIntoHome = (current + this.diceValue) - entry - 1;
+        if (stepsIntoHome > FINISH_OFFSET) {
+          return false; // Would overshoot finish
         }
       }
     }
@@ -128,54 +116,73 @@ class LudoGameEngine {
     return true;
   }
 
+  // TOKEN MOVEMENT LOGIC
   moveToken(playerId, tokenId) {
     if (!this.canMoveToken(playerId, tokenId)) {
       return { success: false, message: 'Invalid move' };
     }
 
     const token = this.tokens[playerId].tokens[tokenId];
+    const color = this.tokens[playerId].color;
+    const config = PLAYER_CONFIG[color];
     const oldPosition = token.position;
     const captured = [];
-    const startPos = this.getPlayerStartPosition(playerId);
 
-    // Move token
-    if (token.isHome) {
-      // Move out of home to starting position
-      token.position = startPos;
-      token.isHome = false;
-    } else if (token.position >= BOARD_PATH_LENGTH) {
-      // Token in finish area
+    // Move from home
+    if (token.position === 'home') {
+      token.position = config.start;
+    }
+    // Already in home path
+    else if (token.position >= config.homeStart) {
       token.position += this.diceValue;
-    } else {
-      // Token on main path
-      const relativePos = (token.position - startPos + BOARD_PATH_LENGTH) % BOARD_PATH_LENGTH;
-      const newRelativePos = relativePos + this.diceValue;
       
-      if (newRelativePos >= 51) {
-        // Enter finish area
-        const overshoot = newRelativePos - 51;
-        token.position = BOARD_PATH_LENGTH + overshoot;
-      } else {
-        // Stay on main path
-        token.position = (token.position + this.diceValue) % BOARD_PATH_LENGTH;
+      // Check if finished
+      if (token.position >= config.homeStart + FINISH_OFFSET) {
+        token.finished = true;
+        this.playerStats[playerId].tokensInFinish++;
+      }
+    }
+    // On main path
+    else {
+      const current = token.position;
+      const entry = config.entry;
+      
+      // Check if entering home path
+      if (current <= entry && current + this.diceValue > entry) {
+        const stepsIntoHome = (current + this.diceValue) - entry - 1;
+        token.position = config.homeStart + stepsIntoHome;
+        
+        // Check if finished
+        if (token.position >= config.homeStart + FINISH_OFFSET) {
+          token.finished = true;
+          this.playerStats[playerId].tokensInFinish++;
+        }
+      }
+      // Normal circular movement
+      else {
+        token.position = (current + this.diceValue) % MAIN_PATH_LENGTH;
       }
     }
 
-    // Check for captures (only on main path, not in finish area or safe spots)
-    if (token.position < BOARD_PATH_LENGTH && !this.isSafePosition(token.position)) {
-      const capturedTokens = this.checkCaptures(playerId, token.position);
-      captured.push(...capturedTokens);
+    // KILL (CUT) LOGIC - only on main path, not in safe cells or home path
+    if (typeof token.position === 'number' && 
+        token.position < 100 && 
+        !SAFE_CELLS.includes(token.position) &&
+        !token.finished) {
       
-      if (captured.length > 0) {
-        this.playerStats[playerId].capturesCount += captured.length;
-      }
-    }
-
-    // Update finish area stats
-    if (token.position >= BOARD_PATH_LENGTH) {
-      this.playerStats[playerId].tokensInFinish = this.tokens[playerId].tokens.filter(
-        t => t.position >= BOARD_PATH_LENGTH
+      // Check for stacking (same color tokens on same cell are safe)
+      const sameColorOnCell = this.tokens[playerId].tokens.filter(
+        t => t.position === token.position && !t.finished
       ).length;
+      
+      if (sameColorOnCell === 1) { // Only this token, can kill
+        const killedTokens = this.checkKill(playerId, token.position);
+        captured.push(...killedTokens);
+        
+        if (captured.length > 0) {
+          this.playerStats[playerId].capturesCount += captured.length;
+        }
+      }
     }
 
     // Record move
@@ -189,35 +196,31 @@ class LudoGameEngine {
       timestamp: Date.now(),
     });
 
-    // Check win
+    // Check win condition
     const hasWon = this.checkWin(playerId);
     if (hasWon) {
-      this.winner = playerId;
+      this.winner = this.players[this.currentPlayerIndex];
       this.gameState = 'finished';
     }
 
-    // Determine extra turn
+    // TURN RULES
     let extraTurn = false;
     let reason = '';
 
     if (this.diceValue === 6) {
-      extraTurn = true;
-      reason = 'rolled_six';
       this.consecutiveSixes++;
       
-      // Limit consecutive 6s to 3
+      // Max 3 consecutive sixes - on 3rd six, turn cancelled
       if (this.consecutiveSixes >= 3) {
         extraTurn = false;
         this.consecutiveSixes = 0;
         reason = 'three_sixes_limit';
+      } else {
+        extraTurn = true;
+        reason = 'rolled_six';
       }
     } else {
       this.consecutiveSixes = 0;
-      
-      if (captured.length > 0) {
-        extraTurn = true;
-        reason = 'captured_token';
-      }
     }
 
     // Move to next turn if no extra turn
@@ -237,42 +240,51 @@ class LudoGameEngine {
     };
   }
 
-  isSafePosition(position) {
-    // Finish area is always safe
-    if (position >= BOARD_PATH_LENGTH) {
-      return true;
+  // KILL (CUT) LOGIC
+  checkKill(playerId, position) {
+    const killed = [];
+    
+    // Check if position is safe
+    if (SAFE_CELLS.includes(position)) {
+      return killed;
     }
-    
-    return SAFE_POSITIONS.includes(position);
-  }
 
-  checkCaptures(playerId, position) {
-    const captured = [];
-    
     Object.keys(this.tokens).forEach((opponentId) => {
       if (opponentId === playerId) return;
       
+      const opponentColor = this.tokens[opponentId].color;
+      
       this.tokens[opponentId].tokens.forEach((token, index) => {
-        // Capture only if opponent token is on same position and not in home or safe spot
-        if (token.position === position && !token.isHome && !this.isSafePosition(position)) {
-          token.position = -1;
-          token.isHome = true;
-          this.playerStats[opponentId].tokensCaptured++;
-          captured.push({ playerId: opponentId, tokenId: index });
+        // Can only kill tokens on main path (not in home or home path)
+        if (token.position === position && 
+            typeof token.position === 'number' && 
+            token.position < 100 &&
+            !token.finished) {
+          
+          // Check if opponent has stacked tokens (protection)
+          const stackedCount = this.tokens[opponentId].tokens.filter(
+            t => t.position === position && !t.finished
+          ).length;
+          
+          if (stackedCount === 1) { // Not stacked, can be killed
+            token.position = 'home';
+            token.finished = false;
+            this.playerStats[opponentId].tokensCaptured++;
+            killed.push({ playerId: opponentId, tokenId: index });
+          }
         }
       });
     });
 
-    return captured;
+    return killed;
   }
 
+  // PLAYER WIN CONDITION
   checkWin(playerId) {
-    // All 4 tokens must reach finish area (positions 57+)
-    return this.tokens[playerId].tokens.every(
-      token => token.position >= TOTAL_POSITIONS
-    );
+    return this.tokens[playerId].tokens.every(token => token.finished);
   }
 
+  // TURN SWITCHING
   nextTurn() {
     this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
     this.consecutiveSixes = 0;
