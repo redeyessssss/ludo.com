@@ -142,12 +142,36 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     ctx.fillStyle = COLORS.white;
     ctx.fillRect(0, 0, BOARD_SIZE, BOARD_SIZE);
 
-    // The reference image shows:
-    // - 4 corner boxes (each 6x6 cells)
+    // Reference image structure:
+    // - 4 corner boxes (6x6 cells each) at positions (0,0), (9,0), (0,9), (9,9)
     // - Cross-shaped path between them (3 cells wide)
-    // Layout: 6 cells (box) + 3 cells (path) + 6 cells (box) = 15 cells total
+    // - Path cells are at rows 6,7,8 and columns 6,7,8
+    // - The boxes do NOT overlap the path
     
-    // Draw home areas FIRST (large colored squares in corners)
+    // Draw ALL white path cells in cross shape FIRST
+    // Horizontal bar (rows 6,7,8 - full width from 0 to 14)
+    for (let row = 6; row <= 8; row++) {
+      for (let col = 0; col <= 14; col++) {
+        ctx.fillStyle = COLORS.white;
+        ctx.fillRect(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+        ctx.strokeStyle = COLORS.black;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+      }
+    }
+    
+    // Vertical bar (columns 6,7,8 - full height from 0 to 14)
+    for (let col = 6; col <= 8; col++) {
+      for (let row = 0; row <= 14; row++) {
+        ctx.fillStyle = COLORS.white;
+        ctx.fillRect(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+        ctx.strokeStyle = COLORS.black;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+      }
+    }
+
+    // Now draw the 4 corner home boxes (they sit in the corners, NOT overlapping the cross)
     // RED (top-left) - rows 0-5, cols 0-5
     ctx.fillStyle = COLORS.red;
     ctx.fillRect(0, 0, 6 * CELL_SIZE, 6 * CELL_SIZE);
@@ -168,8 +192,8 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     ctx.strokeRect(9 * CELL_SIZE, 0, 6 * CELL_SIZE, 6 * CELL_SIZE);
     ctx.strokeRect(10 * CELL_SIZE, CELL_SIZE, 4 * CELL_SIZE, 4 * CELL_SIZE);
     
-    // BLUE (bottom-left) - rows 9-14, cols 0-5
-    ctx.fillStyle = COLORS.blue;
+    // YELLOW (bottom-left) - rows 9-14, cols 0-5
+    ctx.fillStyle = COLORS.yellow;
     ctx.fillRect(0, 9 * CELL_SIZE, 6 * CELL_SIZE, 6 * CELL_SIZE);
     ctx.fillStyle = COLORS.white;
     ctx.fillRect(CELL_SIZE, 10 * CELL_SIZE, 4 * CELL_SIZE, 4 * CELL_SIZE);
@@ -178,8 +202,8 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     ctx.strokeRect(0, 9 * CELL_SIZE, 6 * CELL_SIZE, 6 * CELL_SIZE);
     ctx.strokeRect(CELL_SIZE, 10 * CELL_SIZE, 4 * CELL_SIZE, 4 * CELL_SIZE);
     
-    // YELLOW (bottom-right) - rows 9-14, cols 9-14
-    ctx.fillStyle = COLORS.yellow;
+    // BLUE (bottom-right) - rows 9-14, cols 9-14
+    ctx.fillStyle = COLORS.blue;
     ctx.fillRect(9 * CELL_SIZE, 9 * CELL_SIZE, 6 * CELL_SIZE, 6 * CELL_SIZE);
     ctx.fillStyle = COLORS.white;
     ctx.fillRect(10 * CELL_SIZE, 10 * CELL_SIZE, 4 * CELL_SIZE, 4 * CELL_SIZE);
@@ -188,30 +212,7 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     ctx.strokeRect(9 * CELL_SIZE, 9 * CELL_SIZE, 6 * CELL_SIZE, 6 * CELL_SIZE);
     ctx.strokeRect(10 * CELL_SIZE, 10 * CELL_SIZE, 4 * CELL_SIZE, 4 * CELL_SIZE);
 
-    // Now draw the cross-shaped path area (white cells with black borders)
-    // Horizontal bar - 3 rows (6, 7, 8) spanning full width
-    for (let row = 6; row <= 8; row++) {
-      for (let col = 0; col <= 14; col++) {
-        ctx.fillStyle = COLORS.white;
-        ctx.fillRect(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-        ctx.strokeStyle = COLORS.black;
-        ctx.lineWidth = 2;
-        ctx.strokeRect(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-      }
-    }
-    
-    // Vertical bar - 3 columns (6, 7, 8) spanning full height
-    for (let col = 6; col <= 8; col++) {
-      for (let row = 0; row <= 14; row++) {
-        ctx.fillStyle = COLORS.white;
-        ctx.fillRect(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-        ctx.strokeStyle = COLORS.black;
-        ctx.lineWidth = 2;
-        ctx.strokeRect(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-      }
-    }
-
-    // Draw colored home paths OVER the white cells
+    // Draw colored home paths (on top of white cells in the cross)
     // RED home path (horizontal - row 7, columns 1-6)
     ctx.fillStyle = COLORS.red;
     for (let col = 1; col <= 6; col++) {
@@ -230,15 +231,6 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
       ctx.strokeRect(7 * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
     }
     
-    // BLUE home path (horizontal - row 7, columns 8-13)
-    ctx.fillStyle = COLORS.blue;
-    for (let col = 8; col <= 13; col++) {
-      ctx.fillRect(col * CELL_SIZE, 7 * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-      ctx.strokeStyle = COLORS.black;
-      ctx.lineWidth = 2;
-      ctx.strokeRect(col * CELL_SIZE, 7 * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-    }
-    
     // YELLOW home path (vertical - column 7, rows 8-13)
     ctx.fillStyle = COLORS.yellow;
     for (let row = 8; row <= 13; row++) {
@@ -246,6 +238,15 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
       ctx.strokeStyle = COLORS.black;
       ctx.lineWidth = 2;
       ctx.strokeRect(7 * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+    }
+    
+    // BLUE home path (horizontal - row 7, columns 8-13)
+    ctx.fillStyle = COLORS.blue;
+    for (let col = 8; col <= 13; col++) {
+      ctx.fillRect(col * CELL_SIZE, 7 * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+      ctx.strokeStyle = COLORS.black;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(col * CELL_SIZE, 7 * CELL_SIZE, CELL_SIZE, CELL_SIZE);
     }
 
     // Center finish area with 4 colored triangles
