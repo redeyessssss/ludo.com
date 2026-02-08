@@ -144,46 +144,6 @@ export default function Game() {
           {/* Game Board - Takes 3 columns on desktop, full width on mobile */}
           <div className="lg:col-span-3 w-full">
             <div className="bg-white rounded-2xl shadow-2xl p-4 md:p-6 animate-scale-in">
-              {/* Dice Section */}
-              <div className="mb-6 md:mb-8 text-center">
-                <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-3 md:mb-4">🎲 Roll the Dice</h2>
-                <div className="flex flex-col sm:flex-row justify-center items-center gap-3 md:gap-4 mb-4 md:mb-6">
-                  {/* Dice Display */}
-                  <div
-                    className={`w-20 h-20 md:w-24 md:h-24 bg-gradient-to-br from-yellow-300 to-yellow-500 rounded-2xl shadow-2xl flex items-center justify-center text-4xl md:text-6xl font-bold text-white cursor-pointer transition-all duration-300 ${
-                      showDiceAnimation ? 'animate-dice-roll' : ''
-                    } ${isCurrentPlayer ? 'hover:scale-110 hover:shadow-3xl' : 'opacity-50'}`}
-                    onClick={handleRollDice}
-                  >
-                    {diceValue || '?'}
-                  </div>
-
-                  {/* Roll Button */}
-                  <button
-                    onClick={handleRollDice}
-                    disabled={rolling || !isCurrentPlayer}
-                    className={`px-6 md:px-8 py-3 md:py-4 rounded-xl font-bold text-base md:text-lg transition-all duration-300 transform w-full sm:w-auto ${
-                      isCurrentPlayer && !rolling
-                        ? 'bg-gradient-to-r from-green-400 to-green-600 text-white hover:scale-105 active:scale-95 shadow-lg hover:shadow-2xl'
-                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    }`}
-                  >
-                    {rolling ? '🎲 Rolling...' : '🎲 Roll Dice'}
-                  </button>
-                </div>
-
-                {/* Instructions */}
-                <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-3 md:p-4 text-left text-sm md:text-base">
-                  <p className="text-gray-700 font-semibold mb-2">📋 How to Play:</p>
-                  <ul className="text-xs md:text-sm text-gray-600 space-y-1">
-                    <li>✓ Click "Roll Dice" when it's your turn</li>
-                    <li>✓ Click on highlighted tokens to move them</li>
-                    <li>✓ Reach the center to win!</li>
-                    <li>✓ Safe spots (⭐) protect your tokens</li>
-                  </ul>
-                </div>
-              </div>
-
               {/* Game Board */}
               <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-2 md:p-4 shadow-inner">
                 {/* Last Action Display */}
@@ -202,13 +162,57 @@ export default function Game() {
                   </div>
                 )}
 
-                <LudoBoard
-                  gameState={gameState}
-                  onTokenClick={handleTokenClick}
-                  onDiceRoll={handleRollDice}
-                  currentUserId={user.id}
-                  availableMoves={availableMoves}
-                />
+                {/* Board with Dice positioned at center */}
+                <div className="relative">
+                  <LudoBoard
+                    gameState={gameState}
+                    onTokenClick={handleTokenClick}
+                    onDiceRoll={handleRollDice}
+                    currentUserId={user.id}
+                    availableMoves={availableMoves}
+                  />
+                  
+                  {/* Dice positioned at center of board */}
+                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+                    <div className="flex flex-col items-center gap-3 pointer-events-auto">
+                      {/* Dice Display */}
+                      <div
+                        className={`w-20 h-20 md:w-24 md:h-24 bg-gradient-to-br from-yellow-300 to-yellow-500 rounded-2xl shadow-2xl flex items-center justify-center text-4xl md:text-6xl font-bold text-white cursor-pointer transition-all duration-300 border-4 border-white ${
+                          showDiceAnimation ? 'animate-dice-roll' : ''
+                        } ${isCurrentPlayer ? 'hover:scale-110 hover:shadow-3xl' : 'opacity-70'}`}
+                        onClick={handleRollDice}
+                      >
+                        {diceValue || '🎲'}
+                      </div>
+
+                      {/* Roll Button - compact version */}
+                      {isCurrentPlayer && (
+                        <button
+                          onClick={handleRollDice}
+                          disabled={rolling}
+                          className={`px-4 py-2 rounded-lg font-bold text-sm transition-all duration-300 transform ${
+                            !rolling
+                              ? 'bg-gradient-to-r from-green-400 to-green-600 text-white hover:scale-105 active:scale-95 shadow-lg'
+                              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          }`}
+                        >
+                          {rolling ? 'Rolling...' : 'Roll'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Instructions below board */}
+                <div className="mt-4 bg-blue-50 border-2 border-blue-300 rounded-lg p-3 text-left text-sm">
+                  <p className="text-gray-700 font-semibold mb-2">📋 How to Play:</p>
+                  <ul className="text-xs text-gray-600 space-y-1">
+                    <li>✓ Click the dice in the center when it's your turn</li>
+                    <li>✓ Click on highlighted tokens to move them</li>
+                    <li>✓ Roll 6 to bring tokens out of home</li>
+                    <li>✓ Reach the center to win!</li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>
