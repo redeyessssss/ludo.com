@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-// VERSION 5.0.3 - Board redesign matching reference image EXACTLY
+// VERSION 5.0.4 - Fixed token movement path to match board layout
 // CONSTANTS & CONFIG
 const MAIN_PATH_LENGTH = 52;
 const SAFE_CELLS = [0, 8, 13, 21, 26, 34, 39, 47];
@@ -35,67 +35,86 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
   };
 
   // Get the 52-cell main path (clockwise from red start)
+  // Board is 15x15 grid (0-14), with cross at rows/cols 6,7,8
   const getMainPath = () => {
     const path = [];
     
-    // RED START (position 0) - row 6, col 1
-    path.push({ x: 1, y: 6 });
+    // RED START (position 0) - middle of left cross, row 7, col 1
+    path.push({ x: 1, y: 7 });
     
-    // Left column going UP (positions 1-5)
-    for (let i = 5; i >= 1; i--) {
+    // Left column going UP (positions 1-5) - col 0, rows 6 down to 2
+    for (let i = 6; i >= 2; i--) {
       path.push({ x: 0, y: i });
     }
     
-    // Top row going RIGHT (positions 6-12)
-    for (let i = 0; i <= 6; i++) {
-      path.push({ x: i, y: 0 });
-    }
+    // Top-left corner (position 6)
+    path.push({ x: 0, y: 1 });
+    path.push({ x: 0, y: 0 });
     
-    // GREEN START (position 13) - row 0, col 7
-    
-    // Top row continuing RIGHT (positions 14-18)
-    for (let i = 7; i <= 11; i++) {
-      path.push({ x: i, y: 0 });
-    }
-    
-    // Top-right corner going DOWN (positions 19-20)
-    path.push({ x: 12, y: 0 });
-    
-    // Right column going DOWN (positions 21-25)
+    // Top row going RIGHT (positions 8-12) - row 0, cols 1-5
     for (let i = 1; i <= 5; i++) {
-      path.push({ x: 12, y: i });
+      path.push({ x: i, y: 0 });
     }
     
-    // BLUE START (position 26) - row 6, col 12
-    path.push({ x: 12, y: 6 });
+    // GREEN START (position 13) - middle of top cross, row 1, col 7
+    path.push({ x: 6, y: 0 });
+    path.push({ x: 7, y: 0 });
+    path.push({ x: 7, y: 1 });
     
-    // Right column continuing DOWN (positions 27-31)
-    for (let i = 7; i <= 11; i++) {
-      path.push({ x: 12, y: i });
+    // Top row continuing RIGHT (positions 16-20) - row 0, cols 8-12
+    path.push({ x: 8, y: 0 });
+    for (let i = 9; i <= 13; i++) {
+      path.push({ x: i, y: 0 });
     }
     
-    // Bottom-right corner going LEFT (positions 32)
-    path.push({ x: 12, y: 12 });
+    // Top-right corner (positions 21-22)
+    path.push({ x: 14, y: 0 });
+    path.push({ x: 14, y: 1 });
     
-    // Bottom row going LEFT (positions 33-38)
-    for (let i = 11; i >= 7; i--) {
-      path.push({ x: i, y: 12 });
+    // Right column going DOWN (positions 23-25) - col 14, rows 2-6
+    for (let i = 2; i <= 6; i++) {
+      path.push({ x: 14, y: i });
     }
     
-    // YELLOW START (position 39) - row 12, col 6
+    // BLUE START (position 26) - middle of right cross, row 7, col 13
+    path.push({ x: 14, y: 7 });
+    path.push({ x: 13, y: 7 });
     
-    // Bottom row continuing LEFT (positions 40-45)
-    for (let i = 6; i >= 1; i--) {
-      path.push({ x: i, y: 12 });
+    // Right column continuing DOWN (positions 28-32) - col 14, rows 8-12
+    path.push({ x: 14, y: 8 });
+    for (let i = 9; i <= 13; i++) {
+      path.push({ x: 14, y: i });
     }
     
-    // Bottom-left corner going UP (positions 46)
-    path.push({ x: 0, y: 12 });
+    // Bottom-right corner (positions 33-34)
+    path.push({ x: 14, y: 14 });
+    path.push({ x: 13, y: 14 });
     
-    // Left column going UP back to start (positions 47-51)
-    for (let i = 11; i >= 7; i--) {
+    // Bottom row going LEFT (positions 35-38) - row 14, cols 12-8
+    for (let i = 12; i >= 8; i--) {
+      path.push({ x: i, y: 14 });
+    }
+    
+    // YELLOW START (position 39) - middle of bottom cross, row 13, col 7
+    path.push({ x: 7, y: 14 });
+    path.push({ x: 7, y: 13 });
+    
+    // Bottom row continuing LEFT (positions 41-45) - row 14, cols 6-2
+    path.push({ x: 6, y: 14 });
+    for (let i = 5; i >= 1; i--) {
+      path.push({ x: i, y: 14 });
+    }
+    
+    // Bottom-left corner (positions 46-47)
+    path.push({ x: 0, y: 14 });
+    path.push({ x: 0, y: 13 });
+    
+    // Left column going UP back to start (positions 48-51) - col 0, rows 12-8
+    for (let i = 12; i >= 8; i--) {
       path.push({ x: 0, y: i });
     }
+    
+    // Position 52 would wrap back to position 0
     
     return path;
   };
@@ -104,16 +123,16 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
   const getHomePaths = () => {
     return {
       red: [
-        { x: 1, y: 6 }, { x: 2, y: 6 }, { x: 3, y: 6 }, { x: 4, y: 6 }, { x: 5, y: 6 }, { x: 6, y: 6 }
+        { x: 1, y: 7 }, { x: 2, y: 7 }, { x: 3, y: 7 }, { x: 4, y: 7 }, { x: 5, y: 7 }, { x: 6, y: 7 }
       ],
       green: [
-        { x: 6, y: 1 }, { x: 6, y: 2 }, { x: 6, y: 3 }, { x: 6, y: 4 }, { x: 6, y: 5 }, { x: 6, y: 6 }
+        { x: 7, y: 1 }, { x: 7, y: 2 }, { x: 7, y: 3 }, { x: 7, y: 4 }, { x: 7, y: 5 }, { x: 7, y: 6 }
       ],
       yellow: [
-        { x: 6, y: 11 }, { x: 6, y: 10 }, { x: 6, y: 9 }, { x: 6, y: 8 }, { x: 6, y: 7 }, { x: 6, y: 6 }
+        { x: 7, y: 13 }, { x: 7, y: 12 }, { x: 7, y: 11 }, { x: 7, y: 10 }, { x: 7, y: 9 }, { x: 7, y: 8 }
       ],
       blue: [
-        { x: 11, y: 6 }, { x: 10, y: 6 }, { x: 9, y: 6 }, { x: 8, y: 6 }, { x: 7, y: 6 }, { x: 6, y: 6 }
+        { x: 13, y: 7 }, { x: 12, y: 7 }, { x: 11, y: 7 }, { x: 10, y: 7 }, { x: 9, y: 7 }, { x: 8, y: 7 }
       ],
     };
   };
@@ -478,7 +497,7 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     <div className="w-full flex flex-col items-center justify-center">
       {/* Version indicator */}
       <div className="mb-4 px-4 py-2 bg-blue-500 text-white rounded-lg font-bold text-sm">
-        Board Version: 5.0.3 - Reference Design
+        Board Version: 5.0.4 - Fixed Token Movement
       </div>
       
       <div className="relative bg-white rounded-xl shadow-2xl overflow-hidden border-4 border-black">
