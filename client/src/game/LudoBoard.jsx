@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-// VERSION 5.0.2 - Board redesign matching reference image EXACTLY
+// VERSION 5.0.3 - Board redesign matching reference image EXACTLY
 // CONSTANTS & CONFIG
 const MAIN_PATH_LENGTH = 52;
 const SAFE_CELLS = [0, 8, 13, 21, 26, 34, 39, 47];
@@ -476,6 +476,11 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
 
   return (
     <div className="w-full flex flex-col items-center justify-center">
+      {/* Version indicator */}
+      <div className="mb-4 px-4 py-2 bg-blue-500 text-white rounded-lg font-bold text-sm">
+        Board Version: 5.0.3 - Reference Design
+      </div>
+      
       <div className="relative bg-white rounded-xl shadow-2xl overflow-hidden border-4 border-black">
         <canvas
           ref={canvasRef}
@@ -483,7 +488,12 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
           height={BOARD_SIZE}
           onClick={handleCanvasClick}
           className="cursor-pointer"
-          style={{ maxWidth: '100%', height: 'auto', display: 'block' }}
+          style={{ 
+            maxWidth: '100%', 
+            height: 'auto', 
+            display: 'block',
+            imageRendering: 'crisp-edges'
+          }}
         />
       </div>
 
