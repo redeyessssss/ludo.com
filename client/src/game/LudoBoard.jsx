@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-// VERSION 5.0.7 - Fixed starting positions for all colors
+// VERSION 5.0.8 - Added cell IDs for path mapping
 // CONSTANTS & CONFIG
 const MAIN_PATH_LENGTH = 52;
 const SAFE_CELLS = [0, 8, 13, 21, 26, 34, 39, 47];
@@ -349,6 +349,28 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     ctx.strokeStyle = COLORS.black;
     ctx.lineWidth = 2;
     ctx.stroke();
+
+    // Draw cell IDs for debugging - show grid coordinates
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.font = '10px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    for (let row = 0; row <= 14; row++) {
+      for (let col = 0; col <= 14; col++) {
+        // Skip home areas (interior white squares)
+        if ((row >= 1 && row <= 4 && col >= 1 && col <= 4) ||
+            (row >= 1 && row <= 4 && col >= 10 && col <= 13) ||
+            (row >= 10 && row <= 13 && col >= 1 && col <= 4) ||
+            (row >= 10 && row <= 13 && col >= 10 && col <= 13)) {
+          continue;
+        }
+        
+        const x = col * CELL_SIZE + CELL_SIZE / 2;
+        const y = row * CELL_SIZE + CELL_SIZE / 2;
+        ctx.fillText(`${col},${row}`, x, y);
+      }
+    }
   };
 
   // Draw tokens - simple circular style like reference image
@@ -516,7 +538,7 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     <div className="w-full flex flex-col items-center justify-center">
       {/* Version indicator */}
       <div className="mb-4 px-4 py-2 bg-blue-500 text-white rounded-lg font-bold text-sm">
-        Board Version: 5.0.7 - Fixed Start Positions
+        Board Version: 5.0.8 - Cell IDs Visible
       </div>
       
       <div className="relative bg-white rounded-xl shadow-2xl overflow-hidden border-4 border-black">
