@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-// VERSION 5.0.9 - Correct starting positions: Red(1,6) Green(8,1) Blue(13,8) Yellow(6,13)
+// VERSION 5.1.0 - Removed corner cells, clean Ludo path only
 // CONSTANTS & CONFIG
 const MAIN_PATH_LENGTH = 52;
 const SAFE_CELLS = [0, 8, 13, 21, 26, 34, 39, 47];
@@ -35,102 +35,104 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
   };
 
   // Get the 52-cell main path (clockwise from red start)
-  // Following EXACT Ludo spec: positions 0-51
   // Red starts at 0: (1,6), Green at 13: (8,1), Blue at 26: (13,8), Yellow at 39: (6,13)
+  // Path goes around the board, skipping corner diagonal cells
   const getMainPath = () => {
     const path = [];
     
     // Position 0: RED START (1,6)
     path.push({ x: 1, y: 6 });
     
-    // Positions 1-7: Going UP on left side
+    // Positions 1-5: Going UP on left side (col 0)
     path.push({ x: 0, y: 6 });
-    path.push({ x: 0, y: 5 });
-    path.push({ x: 0, y: 4 });
-    path.push({ x: 0, y: 3 });
-    path.push({ x: 0, y: 2 });
-    path.push({ x: 0, y: 1 });
-    path.push({ x: 0, y: 0 });
+    path.push({ x: 0, y: 7 });
+    path.push({ x: 0, y: 8 });
+    path.push({ x: 1, y: 8 });
+    path.push({ x: 2, y: 8 });
     
-    // Position 8: SAFE SPOT - top-left corner
+    // Positions 6-7: Continue left side
+    path.push({ x: 3, y: 8 });
+    path.push({ x: 4, y: 8 });
     
-    // Positions 9-12: Going RIGHT on top row
-    path.push({ x: 1, y: 0 });
-    path.push({ x: 2, y: 0 });
-    path.push({ x: 3, y: 0 });
-    path.push({ x: 4, y: 0 });
-    path.push({ x: 5, y: 0 });
-    path.push({ x: 6, y: 0 });
-    path.push({ x: 7, y: 0 });
+    // Position 8: SAFE SPOT
+    path.push({ x: 5, y: 8 });
+    
+    // Positions 9-12: Going to top (col 6)
+    path.push({ x: 6, y: 8 });
+    path.push({ x: 6, y: 9 });
+    path.push({ x: 6, y: 10 });
+    path.push({ x: 6, y: 11 });
+    path.push({ x: 6, y: 12 });
+    path.push({ x: 6, y: 13 });
     
     // Position 13: GREEN START (8,1)
     path.push({ x: 8, y: 1 });
     
-    // Positions 14-20: Continuing RIGHT and DOWN
+    // Positions 14-20: Continue on top
     path.push({ x: 8, y: 0 });
-    path.push({ x: 9, y: 0 });
-    path.push({ x: 10, y: 0 });
-    path.push({ x: 11, y: 0 });
-    path.push({ x: 12, y: 0 });
-    path.push({ x: 13, y: 0 });
-    path.push({ x: 14, y: 0 });
+    path.push({ x: 7, y: 0 });
+    path.push({ x: 6, y: 0 });
+    path.push({ x: 6, y: 1 });
+    path.push({ x: 6, y: 2 });
+    path.push({ x: 6, y: 3 });
+    path.push({ x: 6, y: 4 });
     
-    // Position 21: SAFE SPOT - top-right corner
+    // Position 21: SAFE SPOT
+    path.push({ x: 6, y: 5 });
     
-    // Positions 22-25: Going DOWN on right side
-    path.push({ x: 14, y: 1 });
-    path.push({ x: 14, y: 2 });
-    path.push({ x: 14, y: 3 });
-    path.push({ x: 14, y: 4 });
-    path.push({ x: 14, y: 5 });
-    path.push({ x: 14, y: 6 });
-    path.push({ x: 14, y: 7 });
+    // Positions 22-25: Going to right (row 6)
+    path.push({ x: 6, y: 6 });
+    path.push({ x: 7, y: 6 });
+    path.push({ x: 8, y: 6 });
+    path.push({ x: 9, y: 6 });
+    path.push({ x: 10, y: 6 });
+    path.push({ x: 11, y: 6 });
     
     // Position 26: BLUE START (13,8)
     path.push({ x: 13, y: 8 });
     
-    // Positions 27-33: Continuing DOWN on right side
+    // Positions 27-33: Continue on right
     path.push({ x: 14, y: 8 });
-    path.push({ x: 14, y: 9 });
-    path.push({ x: 14, y: 10 });
-    path.push({ x: 14, y: 11 });
-    path.push({ x: 14, y: 12 });
-    path.push({ x: 14, y: 13 });
-    path.push({ x: 14, y: 14 });
+    path.push({ x: 14, y: 7 });
+    path.push({ x: 14, y: 6 });
+    path.push({ x: 13, y: 6 });
+    path.push({ x: 12, y: 6 });
+    path.push({ x: 11, y: 6 });
+    path.push({ x: 10, y: 6 });
     
-    // Position 34: SAFE SPOT - bottom-right corner
+    // Position 34: SAFE SPOT
+    path.push({ x: 9, y: 6 });
     
-    // Positions 35-38: Going LEFT on bottom row
-    path.push({ x: 13, y: 14 });
-    path.push({ x: 12, y: 14 });
-    path.push({ x: 11, y: 14 });
-    path.push({ x: 10, y: 14 });
-    path.push({ x: 9, y: 14 });
-    path.push({ x: 8, y: 14 });
-    path.push({ x: 7, y: 14 });
+    // Positions 35-38: Going to bottom (col 8)
+    path.push({ x: 8, y: 6 });
+    path.push({ x: 8, y: 5 });
+    path.push({ x: 8, y: 4 });
+    path.push({ x: 8, y: 3 });
+    path.push({ x: 8, y: 2 });
+    path.push({ x: 8, y: 1 });
     
     // Position 39: YELLOW START (6,13)
     path.push({ x: 6, y: 13 });
     
-    // Positions 40-46: Continuing LEFT on bottom
+    // Positions 40-46: Continue on bottom
     path.push({ x: 6, y: 14 });
-    path.push({ x: 5, y: 14 });
-    path.push({ x: 4, y: 14 });
-    path.push({ x: 3, y: 14 });
-    path.push({ x: 2, y: 14 });
-    path.push({ x: 1, y: 14 });
-    path.push({ x: 0, y: 14 });
+    path.push({ x: 7, y: 14 });
+    path.push({ x: 8, y: 14 });
+    path.push({ x: 8, y: 13 });
+    path.push({ x: 8, y: 12 });
+    path.push({ x: 8, y: 11 });
+    path.push({ x: 8, y: 10 });
     
-    // Position 47: SAFE SPOT - bottom-left corner
+    // Position 47: SAFE SPOT
+    path.push({ x: 8, y: 9 });
     
-    // Positions 48-51: Going UP on left side back to start
-    path.push({ x: 0, y: 13 });
-    path.push({ x: 0, y: 12 });
-    path.push({ x: 0, y: 11 });
-    path.push({ x: 0, y: 10 });
-    path.push({ x: 0, y: 9 });
-    path.push({ x: 0, y: 8 });
-    path.push({ x: 0, y: 7 });
+    // Positions 48-51: Going back to start
+    path.push({ x: 8, y: 8 });
+    path.push({ x: 7, y: 8 });
+    path.push({ x: 6, y: 8 });
+    path.push({ x: 5, y: 8 });
+    path.push({ x: 4, y: 8 });
+    path.push({ x: 3, y: 8 });
     
     // Position 52 wraps back to position 0 at (1,6)
     
@@ -180,36 +182,7 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     ctx.fillStyle = COLORS.white;
     ctx.fillRect(0, 0, BOARD_SIZE, BOARD_SIZE);
 
-    // Reference image structure:
-    // - 4 corner boxes (6x6 cells each) at positions (0,0), (9,0), (0,9), (9,9)
-    // - Cross-shaped path between them (3 cells wide)
-    // - Path cells are at rows 6,7,8 and columns 6,7,8
-    // - The boxes do NOT overlap the path
-    
-    // Draw ALL white path cells in cross shape FIRST
-    // Horizontal bar (rows 6,7,8 - full width from 0 to 14)
-    for (let row = 6; row <= 8; row++) {
-      for (let col = 0; col <= 14; col++) {
-        ctx.fillStyle = COLORS.white;
-        ctx.fillRect(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-        ctx.strokeStyle = COLORS.black;
-        ctx.lineWidth = 2;
-        ctx.strokeRect(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-      }
-    }
-    
-    // Vertical bar (columns 6,7,8 - full height from 0 to 14)
-    for (let col = 6; col <= 8; col++) {
-      for (let row = 0; row <= 14; row++) {
-        ctx.fillStyle = COLORS.white;
-        ctx.fillRect(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-        ctx.strokeStyle = COLORS.black;
-        ctx.lineWidth = 2;
-        ctx.strokeRect(col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-      }
-    }
-
-    // Now draw the 4 corner home boxes (they sit in the corners, NOT overlapping the cross)
+    // Draw the 4 corner home boxes first
     // RED (top-left) - rows 0-5, cols 0-5
     ctx.fillStyle = COLORS.red;
     ctx.fillRect(0, 0, 6 * CELL_SIZE, 6 * CELL_SIZE);
@@ -250,7 +223,51 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     ctx.strokeRect(9 * CELL_SIZE, 9 * CELL_SIZE, 6 * CELL_SIZE, 6 * CELL_SIZE);
     ctx.strokeRect(10 * CELL_SIZE, 10 * CELL_SIZE, 4 * CELL_SIZE, 4 * CELL_SIZE);
 
-    // Draw colored home paths (on top of white cells in the cross)
+    // Draw only the playable path cells (not corner diagonals)
+    // Define which cells are part of the actual Ludo path
+    const pathCells = [
+      // Left side vertical path (col 0, rows 6-8)
+      { x: 0, y: 6 }, { x: 0, y: 7 }, { x: 0, y: 8 },
+      
+      // Top side horizontal path (row 0, cols 6-8)
+      { x: 6, y: 0 }, { x: 7, y: 0 }, { x: 8, y: 0 },
+      
+      // Right side vertical path (col 14, rows 6-8)
+      { x: 14, y: 6 }, { x: 14, y: 7 }, { x: 14, y: 8 },
+      
+      // Bottom side horizontal path (row 14, cols 6-8)
+      { x: 6, y: 14 }, { x: 7, y: 14 }, { x: 8, y: 14 },
+      
+      // Red's path cells (left side + top left + top)
+      { x: 1, y: 6 }, { x: 2, y: 6 }, { x: 3, y: 6 }, { x: 4, y: 6 }, { x: 5, y: 6 }, { x: 6, y: 6 },
+      { x: 6, y: 1 }, { x: 6, y: 2 }, { x: 6, y: 3 }, { x: 6, y: 4 }, { x: 6, y: 5 },
+      
+      // Green's path cells (top + top right + right)
+      { x: 8, y: 1 }, { x: 8, y: 2 }, { x: 8, y: 3 }, { x: 8, y: 4 }, { x: 8, y: 5 }, { x: 8, y: 6 },
+      { x: 9, y: 6 }, { x: 10, y: 6 }, { x: 11, y: 6 }, { x: 12, y: 6 }, { x: 13, y: 6 },
+      
+      // Blue's path cells (right + bottom right + bottom)
+      { x: 13, y: 8 }, { x: 12, y: 8 }, { x: 11, y: 8 }, { x: 10, y: 8 }, { x: 9, y: 8 }, { x: 8, y: 8 },
+      { x: 8, y: 9 }, { x: 8, y: 10 }, { x: 8, y: 11 }, { x: 8, y: 12 }, { x: 8, y: 13 },
+      
+      // Yellow's path cells (bottom + bottom left + left)
+      { x: 6, y: 13 }, { x: 6, y: 12 }, { x: 6, y: 11 }, { x: 6, y: 10 }, { x: 6, y: 9 }, { x: 6, y: 8 },
+      { x: 5, y: 8 }, { x: 4, y: 8 }, { x: 3, y: 8 }, { x: 2, y: 8 }, { x: 1, y: 8 },
+      
+      // Center cells
+      { x: 7, y: 6 }, { x: 7, y: 7 }, { x: 7, y: 8 },
+    ];
+    
+    // Draw white path cells with black borders
+    pathCells.forEach(cell => {
+      ctx.fillStyle = COLORS.white;
+      ctx.fillRect(cell.x * CELL_SIZE, cell.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+      ctx.strokeStyle = COLORS.black;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(cell.x * CELL_SIZE, cell.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+    });
+
+    // Draw colored home paths
     // RED home path (horizontal - row 6, columns 1-6)
     ctx.fillStyle = COLORS.red;
     for (let col = 1; col <= 6; col++) {
@@ -349,27 +366,17 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    // Draw cell IDs for debugging - show grid coordinates
+    // Draw cell IDs only on playable cells
     ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
     ctx.font = '10px Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     
-    for (let row = 0; row <= 14; row++) {
-      for (let col = 0; col <= 14; col++) {
-        // Skip home areas (interior white squares)
-        if ((row >= 1 && row <= 4 && col >= 1 && col <= 4) ||
-            (row >= 1 && row <= 4 && col >= 10 && col <= 13) ||
-            (row >= 10 && row <= 13 && col >= 1 && col <= 4) ||
-            (row >= 10 && row <= 13 && col >= 10 && col <= 13)) {
-          continue;
-        }
-        
-        const x = col * CELL_SIZE + CELL_SIZE / 2;
-        const y = row * CELL_SIZE + CELL_SIZE / 2;
-        ctx.fillText(`${col},${row}`, x, y);
-      }
-    }
+    pathCells.forEach(cell => {
+      const x = cell.x * CELL_SIZE + CELL_SIZE / 2;
+      const y = cell.y * CELL_SIZE + CELL_SIZE / 2;
+      ctx.fillText(`${cell.x},${cell.y}`, x, y);
+    });
   };
 
   // Draw tokens - simple circular style like reference image
@@ -537,7 +544,7 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     <div className="w-full flex flex-col items-center justify-center">
       {/* Version indicator */}
       <div className="mb-4 px-4 py-2 bg-blue-500 text-white rounded-lg font-bold text-sm">
-        Board Version: 5.0.9 - Correct Start Positions
+        Board Version: 5.1.0 - Clean Path (No Corners)
       </div>
       
       <div className="relative bg-white rounded-xl shadow-2xl overflow-hidden border-4 border-black">

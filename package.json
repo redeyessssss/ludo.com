@@ -1,6 +1,6 @@
 {
   "name": "ludo-multiplayer",
-  "version": "5.0.9",
+  "version": "5.1.0",
   "description": "Multiplayer Ludo game platform like Chess.com",
   "scripts": {
     "dev": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
