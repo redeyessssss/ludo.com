@@ -43,8 +43,8 @@ const SAFE_CELLS = [0, 8, 13, 21, 26, 34, 39, 47];
 const PLAYER_CONFIG = {
   red:    { start: 0,  entry: 51, homeStart: 100 },  // Red enters home from position 51 (0,7)
   green:  { start: 13, entry: 12, homeStart: 200 },  // Green enters home from position 12 (8,0)
-  yellow: { start: 40, entry: 38, homeStart: 300 },  // Yellow enters home from position 38 (7,14)
-  blue:   { start: 27, entry: 25, homeStart: 400 }   // Blue enters home from position 25 (14,7)
+  blue:   { start: 27, entry: 26, homeStart: 400 },  // Blue enters home from position 26 (14,8)
+  yellow: { start: 40, entry: 39, homeStart: 300 }   // Yellow enters home from position 39 (6,14)
 };
 
 class LudoGameEngine {
