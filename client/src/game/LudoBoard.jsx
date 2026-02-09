@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-// VERSION 5.0.5 - Dice positioned at center of board
+// VERSION 5.0.6 - Exact 52-cell path matching Ludo spec
 // CONSTANTS & CONFIG
 const MAIN_PATH_LENGTH = 52;
 const SAFE_CELLS = [0, 8, 13, 21, 26, 34, 39, 47];
@@ -35,86 +35,107 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
   };
 
   // Get the 52-cell main path (clockwise from red start)
-  // Board is 15x15 grid (0-14), with cross at rows/cols 6,7,8
+  // Following EXACT Ludo spec: positions 0-51
+  // Red starts at 0, Green at 13, Yellow at 26, Blue at 39
   const getMainPath = () => {
     const path = [];
     
-    // RED START (position 0) - middle of left cross, row 7, col 1
+    // Starting from RED's start position (0) at left middle
+    // Moving counter-clockwise around the board
+    
+    // Position 0: RED START - left side, middle row
     path.push({ x: 1, y: 7 });
     
-    // Left column going UP (positions 1-5) - col 0, rows 6 down to 2
-    for (let i = 6; i >= 2; i--) {
-      path.push({ x: 0, y: i });
-    }
+    // Positions 1-5: Going UP on left column
+    path.push({ x: 0, y: 7 });
+    path.push({ x: 0, y: 6 });
+    path.push({ x: 0, y: 5 });
+    path.push({ x: 0, y: 4 });
+    path.push({ x: 0, y: 3 });
     
-    // Top-left corner (position 6)
+    // Positions 6-7: Top-left corner
+    path.push({ x: 0, y: 2 });
     path.push({ x: 0, y: 1 });
+    
+    // Position 8: SAFE SPOT
     path.push({ x: 0, y: 0 });
     
-    // Top row going RIGHT (positions 8-12) - row 0, cols 1-5
-    for (let i = 1; i <= 5; i++) {
-      path.push({ x: i, y: 0 });
-    }
+    // Positions 9-12: Going RIGHT on top row
+    path.push({ x: 1, y: 0 });
+    path.push({ x: 2, y: 0 });
+    path.push({ x: 3, y: 0 });
+    path.push({ x: 4, y: 0 });
+    path.push({ x: 5, y: 0 });
     
-    // GREEN START (position 13) - middle of top cross, row 1, col 7
+    // Position 13: GREEN START - top side, middle column
     path.push({ x: 6, y: 0 });
     path.push({ x: 7, y: 0 });
     path.push({ x: 7, y: 1 });
     
-    // Top row continuing RIGHT (positions 16-20) - row 0, cols 8-12
+    // Positions 16-20: Continuing RIGHT on top
     path.push({ x: 8, y: 0 });
-    for (let i = 9; i <= 13; i++) {
-      path.push({ x: i, y: 0 });
-    }
+    path.push({ x: 9, y: 0 });
+    path.push({ x: 10, y: 0 });
+    path.push({ x: 11, y: 0 });
+    path.push({ x: 12, y: 0 });
     
-    // Top-right corner (positions 21-22)
+    // Position 21: SAFE SPOT - top-right corner
+    path.push({ x: 13, y: 0 });
     path.push({ x: 14, y: 0 });
     path.push({ x: 14, y: 1 });
     
-    // Right column going DOWN (positions 23-25) - col 14, rows 2-6
-    for (let i = 2; i <= 6; i++) {
-      path.push({ x: 14, y: i });
-    }
+    // Positions 24-25: Going DOWN on right column
+    path.push({ x: 14, y: 2 });
+    path.push({ x: 14, y: 3 });
     
-    // BLUE START (position 26) - middle of right cross, row 7, col 13
+    // Position 26: BLUE START - right side, middle row
+    path.push({ x: 14, y: 4 });
+    path.push({ x: 14, y: 5 });
+    path.push({ x: 14, y: 6 });
     path.push({ x: 14, y: 7 });
     path.push({ x: 13, y: 7 });
     
-    // Right column continuing DOWN (positions 28-32) - col 14, rows 8-12
+    // Positions 31-33: Continuing DOWN on right
     path.push({ x: 14, y: 8 });
-    for (let i = 9; i <= 13; i++) {
-      path.push({ x: 14, y: i });
-    }
+    path.push({ x: 14, y: 9 });
+    path.push({ x: 14, y: 10 });
     
-    // Bottom-right corner (positions 33-34)
+    // Position 34: SAFE SPOT
+    path.push({ x: 14, y: 11 });
+    path.push({ x: 14, y: 12 });
+    
+    // Positions 36-38: Bottom-right corner
+    path.push({ x: 14, y: 13 });
     path.push({ x: 14, y: 14 });
     path.push({ x: 13, y: 14 });
     
-    // Bottom row going LEFT (positions 35-38) - row 14, cols 12-8
-    for (let i = 12; i >= 8; i--) {
-      path.push({ x: i, y: 14 });
-    }
-    
-    // YELLOW START (position 39) - middle of bottom cross, row 13, col 7
+    // Position 39: YELLOW START - bottom side, middle column
+    path.push({ x: 12, y: 14 });
+    path.push({ x: 11, y: 14 });
+    path.push({ x: 10, y: 14 });
+    path.push({ x: 9, y: 14 });
+    path.push({ x: 8, y: 14 });
     path.push({ x: 7, y: 14 });
     path.push({ x: 7, y: 13 });
     
-    // Bottom row continuing LEFT (positions 41-45) - row 14, cols 6-2
+    // Positions 46: Continuing LEFT on bottom
     path.push({ x: 6, y: 14 });
-    for (let i = 5; i >= 1; i--) {
-      path.push({ x: i, y: 14 });
-    }
     
-    // Bottom-left corner (positions 46-47)
+    // Position 47: SAFE SPOT
+    path.push({ x: 5, y: 14 });
+    path.push({ x: 4, y: 14 });
+    path.push({ x: 3, y: 14 });
+    path.push({ x: 2, y: 14 });
+    path.push({ x: 1, y: 14 });
+    
+    // Positions 52: Bottom-left corner - wraps back to 0
     path.push({ x: 0, y: 14 });
     path.push({ x: 0, y: 13 });
-    
-    // Left column going UP back to start (positions 48-51) - col 0, rows 12-8
-    for (let i = 12; i >= 8; i--) {
-      path.push({ x: 0, y: i });
-    }
-    
-    // Position 52 would wrap back to position 0
+    path.push({ x: 0, y: 12 });
+    path.push({ x: 0, y: 11 });
+    path.push({ x: 0, y: 10 });
+    path.push({ x: 0, y: 9 });
+    path.push({ x: 0, y: 8 });
     
     return path;
   };
@@ -497,7 +518,7 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     <div className="w-full flex flex-col items-center justify-center">
       {/* Version indicator */}
       <div className="mb-4 px-4 py-2 bg-blue-500 text-white rounded-lg font-bold text-sm">
-        Board Version: 5.0.5 - Dice at Center
+        Board Version: 5.0.6 - Spec-Compliant Path
       </div>
       
       <div className="relative bg-white rounded-xl shadow-2xl overflow-hidden border-4 border-black">
