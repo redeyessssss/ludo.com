@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-// VERSION 5.0.8 - Added cell IDs for path mapping
+// VERSION 5.0.9 - Correct starting positions: Red(1,6) Green(8,1) Blue(13,8) Yellow(6,13)
 // CONSTANTS & CONFIG
 const MAIN_PATH_LENGTH = 52;
 const SAFE_CELLS = [0, 8, 13, 21, 26, 34, 39, 47];
@@ -36,25 +36,23 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
 
   // Get the 52-cell main path (clockwise from red start)
   // Following EXACT Ludo spec: positions 0-51
-  // Red starts at 0, Green at 13, Yellow at 26, Blue at 39
-  // Board layout: 15x15 grid with cross at rows/cols 6,7,8
+  // Red starts at 0: (1,6), Green at 13: (8,1), Blue at 26: (13,8), Yellow at 39: (6,13)
   const getMainPath = () => {
     const path = [];
     
-    // Position 0: RED START - First cell outside red home (row 7, col 1)
-    path.push({ x: 1, y: 7 });
+    // Position 0: RED START (1,6)
+    path.push({ x: 1, y: 6 });
     
     // Positions 1-7: Going UP on left side
-    path.push({ x: 0, y: 7 });
     path.push({ x: 0, y: 6 });
     path.push({ x: 0, y: 5 });
     path.push({ x: 0, y: 4 });
     path.push({ x: 0, y: 3 });
     path.push({ x: 0, y: 2 });
     path.push({ x: 0, y: 1 });
-    
-    // Position 8: SAFE SPOT - Top-left corner
     path.push({ x: 0, y: 0 });
+    
+    // Position 8: SAFE SPOT - top-left corner
     
     // Positions 9-12: Going RIGHT on top row
     path.push({ x: 1, y: 0 });
@@ -63,21 +61,21 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     path.push({ x: 4, y: 0 });
     path.push({ x: 5, y: 0 });
     path.push({ x: 6, y: 0 });
-    
-    // Position 13: GREEN START - First cell outside green home (row 1, col 7)
-    path.push({ x: 7, y: 1 });
-    
-    // Positions 14-20: Continuing on top and right
     path.push({ x: 7, y: 0 });
+    
+    // Position 13: GREEN START (8,1)
+    path.push({ x: 8, y: 1 });
+    
+    // Positions 14-20: Continuing RIGHT and DOWN
     path.push({ x: 8, y: 0 });
     path.push({ x: 9, y: 0 });
     path.push({ x: 10, y: 0 });
     path.push({ x: 11, y: 0 });
     path.push({ x: 12, y: 0 });
     path.push({ x: 13, y: 0 });
-    
-    // Position 21: SAFE SPOT - Top-right corner
     path.push({ x: 14, y: 0 });
+    
+    // Position 21: SAFE SPOT - top-right corner
     
     // Positions 22-25: Going DOWN on right side
     path.push({ x: 14, y: 1 });
@@ -86,21 +84,21 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     path.push({ x: 14, y: 4 });
     path.push({ x: 14, y: 5 });
     path.push({ x: 14, y: 6 });
+    path.push({ x: 14, y: 7 });
     
-    // Position 26: BLUE START - First cell outside blue home (row 7, col 13)
-    path.push({ x: 13, y: 7 });
+    // Position 26: BLUE START (13,8)
+    path.push({ x: 13, y: 8 });
     
     // Positions 27-33: Continuing DOWN on right side
-    path.push({ x: 14, y: 7 });
     path.push({ x: 14, y: 8 });
     path.push({ x: 14, y: 9 });
     path.push({ x: 14, y: 10 });
     path.push({ x: 14, y: 11 });
     path.push({ x: 14, y: 12 });
     path.push({ x: 14, y: 13 });
-    
-    // Position 34: SAFE SPOT - Bottom-right corner
     path.push({ x: 14, y: 14 });
+    
+    // Position 34: SAFE SPOT - bottom-right corner
     
     // Positions 35-38: Going LEFT on bottom row
     path.push({ x: 13, y: 14 });
@@ -109,21 +107,21 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     path.push({ x: 10, y: 14 });
     path.push({ x: 9, y: 14 });
     path.push({ x: 8, y: 14 });
+    path.push({ x: 7, y: 14 });
     
-    // Position 39: YELLOW START - First cell outside yellow home (row 13, col 7)
-    path.push({ x: 7, y: 13 });
+    // Position 39: YELLOW START (6,13)
+    path.push({ x: 6, y: 13 });
     
     // Positions 40-46: Continuing LEFT on bottom
-    path.push({ x: 7, y: 14 });
     path.push({ x: 6, y: 14 });
     path.push({ x: 5, y: 14 });
     path.push({ x: 4, y: 14 });
     path.push({ x: 3, y: 14 });
     path.push({ x: 2, y: 14 });
     path.push({ x: 1, y: 14 });
-    
-    // Position 47: SAFE SPOT - Bottom-left corner
     path.push({ x: 0, y: 14 });
+    
+    // Position 47: SAFE SPOT - bottom-left corner
     
     // Positions 48-51: Going UP on left side back to start
     path.push({ x: 0, y: 13 });
@@ -132,8 +130,9 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     path.push({ x: 0, y: 10 });
     path.push({ x: 0, y: 9 });
     path.push({ x: 0, y: 8 });
+    path.push({ x: 0, y: 7 });
     
-    // Position 52 wraps back to position 0
+    // Position 52 wraps back to position 0 at (1,6)
     
     return path;
   };
@@ -142,16 +141,16 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
   const getHomePaths = () => {
     return {
       red: [
-        { x: 1, y: 7 }, { x: 2, y: 7 }, { x: 3, y: 7 }, { x: 4, y: 7 }, { x: 5, y: 7 }, { x: 6, y: 7 }
+        { x: 1, y: 6 }, { x: 2, y: 6 }, { x: 3, y: 6 }, { x: 4, y: 6 }, { x: 5, y: 6 }, { x: 6, y: 6 }
       ],
       green: [
-        { x: 7, y: 1 }, { x: 7, y: 2 }, { x: 7, y: 3 }, { x: 7, y: 4 }, { x: 7, y: 5 }, { x: 7, y: 6 }
+        { x: 8, y: 1 }, { x: 8, y: 2 }, { x: 8, y: 3 }, { x: 8, y: 4 }, { x: 8, y: 5 }, { x: 8, y: 6 }
       ],
       yellow: [
-        { x: 7, y: 13 }, { x: 7, y: 12 }, { x: 7, y: 11 }, { x: 7, y: 10 }, { x: 7, y: 9 }, { x: 7, y: 8 }
+        { x: 6, y: 13 }, { x: 6, y: 12 }, { x: 6, y: 11 }, { x: 6, y: 10 }, { x: 6, y: 9 }, { x: 6, y: 8 }
       ],
       blue: [
-        { x: 13, y: 7 }, { x: 12, y: 7 }, { x: 11, y: 7 }, { x: 10, y: 7 }, { x: 9, y: 7 }, { x: 8, y: 7 }
+        { x: 13, y: 8 }, { x: 12, y: 8 }, { x: 11, y: 8 }, { x: 10, y: 8 }, { x: 9, y: 8 }, { x: 8, y: 8 }
       ],
     };
   };
@@ -252,40 +251,40 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     ctx.strokeRect(10 * CELL_SIZE, 10 * CELL_SIZE, 4 * CELL_SIZE, 4 * CELL_SIZE);
 
     // Draw colored home paths (on top of white cells in the cross)
-    // RED home path (horizontal - row 7, columns 1-6)
+    // RED home path (horizontal - row 6, columns 1-6)
     ctx.fillStyle = COLORS.red;
     for (let col = 1; col <= 6; col++) {
-      ctx.fillRect(col * CELL_SIZE, 7 * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+      ctx.fillRect(col * CELL_SIZE, 6 * CELL_SIZE, CELL_SIZE, CELL_SIZE);
       ctx.strokeStyle = COLORS.black;
       ctx.lineWidth = 2;
-      ctx.strokeRect(col * CELL_SIZE, 7 * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+      ctx.strokeRect(col * CELL_SIZE, 6 * CELL_SIZE, CELL_SIZE, CELL_SIZE);
     }
     
-    // GREEN home path (vertical - column 7, rows 1-6)
+    // GREEN home path (vertical - column 8, rows 1-6)
     ctx.fillStyle = COLORS.green;
     for (let row = 1; row <= 6; row++) {
-      ctx.fillRect(7 * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+      ctx.fillRect(8 * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
       ctx.strokeStyle = COLORS.black;
       ctx.lineWidth = 2;
-      ctx.strokeRect(7 * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+      ctx.strokeRect(8 * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
     }
     
-    // YELLOW home path (vertical - column 7, rows 8-13)
+    // YELLOW home path (vertical - column 6, rows 8-13)
     ctx.fillStyle = COLORS.yellow;
     for (let row = 8; row <= 13; row++) {
-      ctx.fillRect(7 * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+      ctx.fillRect(6 * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
       ctx.strokeStyle = COLORS.black;
       ctx.lineWidth = 2;
-      ctx.strokeRect(7 * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+      ctx.strokeRect(6 * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
     }
     
-    // BLUE home path (horizontal - row 7, columns 8-13)
+    // BLUE home path (horizontal - row 8, columns 8-13)
     ctx.fillStyle = COLORS.blue;
     for (let col = 8; col <= 13; col++) {
-      ctx.fillRect(col * CELL_SIZE, 7 * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+      ctx.fillRect(col * CELL_SIZE, 8 * CELL_SIZE, CELL_SIZE, CELL_SIZE);
       ctx.strokeStyle = COLORS.black;
       ctx.lineWidth = 2;
-      ctx.strokeRect(col * CELL_SIZE, 7 * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+      ctx.strokeRect(col * CELL_SIZE, 8 * CELL_SIZE, CELL_SIZE, CELL_SIZE);
     }
 
     // Center finish area with 4 colored triangles
@@ -538,7 +537,7 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     <div className="w-full flex flex-col items-center justify-center">
       {/* Version indicator */}
       <div className="mb-4 px-4 py-2 bg-blue-500 text-white rounded-lg font-bold text-sm">
-        Board Version: 5.0.8 - Cell IDs Visible
+        Board Version: 5.0.9 - Correct Start Positions
       </div>
       
       <div className="relative bg-white rounded-xl shadow-2xl overflow-hidden border-4 border-black">
