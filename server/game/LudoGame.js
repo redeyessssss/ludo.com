@@ -37,7 +37,17 @@ const HOME_PATH_LENGTH = 6;
 const FINISH_OFFSET = 5;
 
 // Safe cells where tokens cannot be killed
+// These include starting positions and star-marked safe spots
 const SAFE_CELLS = [0, 8, 13, 21, 26, 34, 39, 47];
+// Position mapping:
+// 0 = (1,6) Red start
+// 8 = (6,2) Top safe spot ⭐
+// 13 = (8,1) Green start
+// 21 = (12,6) Right safe spot ⭐
+// 26 = (13,8) Blue start
+// 34 = (8,12) Bottom safe spot ⭐
+// 39 = (6,13) Yellow start
+// 47 = (2,8) Left safe spot ⭐
 
 // Player configuration
 const PLAYER_CONFIG = {
@@ -280,10 +290,13 @@ class LudoGameEngine {
   }
 
   // KILL (CUT) LOGIC
+  // Safe spots (marked with ⭐) protect tokens from being captured
+  // Purpose: Tokens on safe spots cannot be sent back to home by opponents
+  // This includes: starting positions and 4 star-marked cells on the board
   checkKill(playerId, position) {
     const killed = [];
     
-    // Check if position is safe
+    // Check if position is safe - NO KILLING on safe spots!
     if (SAFE_CELLS.includes(position)) {
       return killed;
     }

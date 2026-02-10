@@ -1,9 +1,18 @@
 import { useEffect, useRef } from 'react';
 
-// VERSION 5.3.0 - Complete clockwise path for all colors matching board arrows
+// VERSION 5.5.0 - Added star markers (⭐) for safe spots
 // CONSTANTS & CONFIG
 const MAIN_PATH_LENGTH = 52;
-const SAFE_CELLS = [0, 8, 13, 21, 26, 34, 39, 47];
+const SAFE_CELLS = [0, 8, 13, 21, 26, 34, 39, 47]; // Safe spots: starting positions + star positions
+// Position mapping: 
+// 0 = (1,6) Red start
+// 8 = (6,2) Top safe spot ⭐
+// 13 = (8,1) Green start  
+// 21 = (12,6) Right safe spot ⭐
+// 26 = (13,8) Blue start
+// 34 = (8,12) Bottom safe spot ⭐
+// 39 = (6,13) Yellow start
+// 47 = (2,8) Left safe spot ⭐
 const PLAYER_CONFIG = {
   red:    { start: 0,  entry: 50, homeStart: 100 },  // Red enters home from position 50 (0,7)
   green:  { start: 13, entry: 11, homeStart: 200 },  // Green enters home from position 11 (7,0)
@@ -351,10 +360,35 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     
+    // Safe spots coordinates
+    const safeSpots = [
+      { x: 2, y: 8 },   // Left safe spot
+      { x: 6, y: 2 },   // Top safe spot
+      { x: 12, y: 6 },  // Right safe spot
+      { x: 8, y: 12 }   // Bottom safe spot
+    ];
+    
     pathCells.forEach(cell => {
       const x = cell.x * CELL_SIZE + CELL_SIZE / 2;
       const y = cell.y * CELL_SIZE + CELL_SIZE / 2;
-      ctx.fillText(`${cell.x},${cell.y}`, x, y);
+      
+      // Check if this is a safe spot
+      const isSafeSpot = safeSpots.some(spot => spot.x === cell.x && spot.y === cell.y);
+      
+      if (isSafeSpot) {
+        // Draw star for safe spots
+        ctx.font = '32px Arial';
+        ctx.fillStyle = '#FFD700'; // Gold color
+        ctx.fillText('⭐', x, y);
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 1;
+        ctx.strokeText('⭐', x, y);
+      } else {
+        // Draw cell coordinates
+        ctx.font = '10px Arial';
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillText(`${cell.x},${cell.y}`, x, y);
+      }
     });
   };
 
@@ -523,7 +557,7 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     <div className="w-full flex flex-col items-center justify-center">
       {/* Version indicator */}
       <div className="mb-4 px-4 py-2 bg-blue-500 text-white rounded-lg font-bold text-sm">
-        Board Version: 5.3.0 - All Colors Correct
+        Board Version: 5.5.0 - Safe Spots ⭐
       </div>
       
       <div className="relative bg-white rounded-xl shadow-2xl overflow-hidden border-4 border-black">
