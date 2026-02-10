@@ -543,6 +543,7 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
           if (prevToken && prevToken.position !== token.position && 
               token.position !== 'home' && prevToken.position !== 'home') {
             // Token moved - start animation
+            console.log(`🎬 Animation started: Token ${idx} moved from ${prevToken.position} to ${token.position}`);
             newAnimations[`${playerId}-${idx}`] = {
               from: prevToken.position,
               to: token.position,
@@ -555,11 +556,12 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
       });
       
       if (Object.keys(newAnimations).length > 0) {
+        console.log('🎬 Starting animations:', newAnimations);
         setAnimatingTokens(newAnimations);
       }
     }
     
-    previousGameStateRef.current = gameState;
+    previousGameStateRef.current = gameState ? JSON.parse(JSON.stringify(gameState)) : null;
     
     // Animation loop
     const animate = () => {
@@ -573,9 +575,10 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
         
         Object.keys(updated).forEach(key => {
           const anim = updated[key];
-          anim.progress += 0.1; // Animation speed
+          anim.progress += 0.05; // Slower animation speed for visibility
           
           if (anim.progress >= 1) {
+            console.log(`✅ Animation complete: ${key}`);
             delete updated[key];
           } else {
             hasActiveAnimations = true;

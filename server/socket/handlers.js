@@ -300,7 +300,7 @@ function setupSocketHandlers(io) {
           captured: result.captured,
           extraTurn: result.extraTurn,
           reason: result.reason,
-          bonus: result.bonus,
+          tokenFinished: result.tokenFinished, // Send tokenFinished flag
           availableMoves,
         });
 

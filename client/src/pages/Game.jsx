@@ -91,9 +91,14 @@ export default function Game() {
         setAvailableMoves(data.availableMoves || []);
         
         // Check if token reached home (finished)
+        console.log('🎯 Token moved, tokenFinished:', data.tokenFinished);
         if (data.tokenFinished) {
+          console.log('🎆 FIREWORKS! Token reached home!');
           setShowFireworks(true);
-          setTimeout(() => setShowFireworks(false), 4000);
+          setTimeout(() => {
+            console.log('🎆 Fireworks ended');
+            setShowFireworks(false);
+          }, 4000);
         }
         
         // Show move feedback
