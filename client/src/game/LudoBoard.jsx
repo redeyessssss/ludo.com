@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
-// VERSION 5.5.0 - Added star markers (⭐) for safe spots
+// VERSION 5.7.0 - Added smooth token movement animation with bounce effect
 // CONSTANTS & CONFIG
 const MAIN_PATH_LENGTH = 52;
 const SAFE_CELLS = [0, 8, 13, 21, 26, 34, 39, 47]; // Safe spots: starting positions + star positions
@@ -24,6 +24,9 @@ const FINISH_OFFSET = 5;
 
 export default function LudoBoard({ gameState, onTokenClick, currentUserId, availableMoves = [] }) {
   const canvasRef = useRef(null);
+  const [animatingTokens, setAnimatingTokens] = useState({});
+  const animationFrameRef = useRef(null);
+  const previousGameStateRef = useRef(null);
 
   const BOARD_SIZE = 900;
   const CELL_SIZE = 60;
@@ -406,43 +409,32 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
 
       playerTokens.tokens.forEach((token, idx) => {
         let x, y;
+        const animKey = `${playerId}-${idx}`;
+        const animation = animatingTokens[animKey];
 
-        if (token.position === 'home') {
-          // Token in home area
-          const homePos = getHomePositions(color)[idx];
-          x = homePos.x * CELL_SIZE + CELL_SIZE / 2;
-          y = homePos.y * CELL_SIZE + CELL_SIZE / 2;
-        } else if (token.finished) {
-          // Token finished - place in center
-          const angle = (idx * Math.PI * 2) / 4 - Math.PI / 2;
-          x = 7.5 * CELL_SIZE + Math.cos(angle) * 20;
-          y = 7.5 * CELL_SIZE + Math.sin(angle) * 20;
-        } else if (token.position >= config.homeStart) {
-          // Token in home path
-          const homePathIndex = token.position - config.homeStart;
-          if (homePathIndex < HOME_PATH_LENGTH) {
-            const pos = homePaths[color][homePathIndex];
-            x = pos.x * CELL_SIZE + CELL_SIZE / 2;
-            y = pos.y * CELL_SIZE + CELL_SIZE / 2;
-          } else {
-            const angle = (idx * Math.PI * 2) / 4 - Math.PI / 2;
-            x = 7.5 * CELL_SIZE + Math.cos(angle) * 20;
-            y = 7.5 * CELL_SIZE + Math.sin(angle) * 20;
-          }
-        } else if (token.position >= 0 && token.position < MAIN_PATH_LENGTH) {
-          // Token on main path
-          const pos = mainPath[token.position];
-          x = pos.x * CELL_SIZE + CELL_SIZE / 2;
-          y = pos.y * CELL_SIZE + CELL_SIZE / 2;
+        // If animating, interpolate position
+        if (animation && animation.progress < 1) {
+          const fromPos = getTokenCoordinates(animation.from, color, config, idx, homePaths, mainPath);
+          const toPos = getTokenCoordinates(token.position, color, config, idx, homePaths, mainPath);
+          
+          // Smooth interpolation
+          const progress = easeInOutQuad(animation.progress);
+          x = fromPos.x + (toPos.x - fromPos.x) * progress;
+          y = fromPos.y + (toPos.y - fromPos.y) * progress;
+          
+          // Add bounce effect
+          const bounce = Math.sin(animation.progress * Math.PI) * 10;
+          y -= bounce;
         } else {
-          const angle = (idx * Math.PI * 2) / 4 - Math.PI / 2;
-          x = 7.5 * CELL_SIZE + Math.cos(angle) * 20;
-          y = 7.5 * CELL_SIZE + Math.sin(angle) * 20;
+          // Normal position
+          const pos = getTokenCoordinates(token.position, color, config, idx, homePaths, mainPath);
+          x = pos.x;
+          y = pos.y;
         }
 
         // Check for stacking
         let stackOffset = 0;
-        if (token.position !== 'home' && !token.finished) {
+        if (token.position !== 'home' && !token.finished && !animation) {
           const tokensOnSameCell = playerTokens.tokens.filter(
             (t, i) => i < idx && t.position === token.position && !t.finished
           ).length;
@@ -465,9 +457,20 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
         ctx.strokeStyle = COLORS.black;
         ctx.lineWidth = 2;
         ctx.stroke();
+        
+        // Glow effect during animation
+        if (animation && animation.progress < 1) {
+          ctx.strokeStyle = COLORS['token' + color.charAt(0).toUpperCase() + color.slice(1)];
+          ctx.lineWidth = 4;
+          ctx.globalAlpha = 0.5 * (1 - animation.progress);
+          ctx.beginPath();
+          ctx.arc(x + stackOffset, y, TOKEN_RADIUS + 8, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
 
         // Highlight available moves
-        if (availableMoves.includes(idx) && gameState.currentPlayer?.id === currentUserId) {
+        if (availableMoves.includes(idx) && gameState.currentPlayer?.id === currentUserId && !animation) {
           ctx.strokeStyle = '#00FF00';
           ctx.lineWidth = 4;
           ctx.beginPath();
@@ -477,15 +480,130 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
       });
     });
   };
+  
+  // Helper function to get token coordinates
+  const getTokenCoordinates = (position, color, config, idx, homePaths, mainPath) => {
+    if (position === 'home') {
+      const homePos = getHomePositions(color)[idx];
+      return {
+        x: homePos.x * CELL_SIZE + CELL_SIZE / 2,
+        y: homePos.y * CELL_SIZE + CELL_SIZE / 2
+      };
+    } else if (position >= config.homeStart) {
+      const homePathIndex = position - config.homeStart;
+      if (homePathIndex < HOME_PATH_LENGTH) {
+        const pos = homePaths[color][homePathIndex];
+        return {
+          x: pos.x * CELL_SIZE + CELL_SIZE / 2,
+          y: pos.y * CELL_SIZE + CELL_SIZE / 2
+        };
+      } else {
+        const angle = (idx * Math.PI * 2) / 4 - Math.PI / 2;
+        return {
+          x: 7.5 * CELL_SIZE + Math.cos(angle) * 20,
+          y: 7.5 * CELL_SIZE + Math.sin(angle) * 20
+        };
+      }
+    } else if (position >= 0 && position < MAIN_PATH_LENGTH) {
+      const pos = mainPath[position];
+      return {
+        x: pos.x * CELL_SIZE + CELL_SIZE / 2,
+        y: pos.y * CELL_SIZE + CELL_SIZE / 2
+      };
+    } else {
+      const angle = (idx * Math.PI * 2) / 4 - Math.PI / 2;
+      return {
+        x: 7.5 * CELL_SIZE + Math.cos(angle) * 20,
+        y: 7.5 * CELL_SIZE + Math.sin(angle) * 20
+      };
+    }
+  };
+  
+  // Easing function for smooth animation
+  const easeInOutQuad = (t) => {
+    return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+  };
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
-    drawBoard(ctx);
-    drawTokens(ctx);
-  }, [gameState, availableMoves]);
+    
+    // Detect token movement and start animation
+    if (gameState && previousGameStateRef.current) {
+      const newAnimations = {};
+      
+      Object.keys(gameState.tokens).forEach(playerId => {
+        const currentTokens = gameState.tokens[playerId].tokens;
+        const previousTokens = previousGameStateRef.current.tokens?.[playerId]?.tokens || [];
+        
+        currentTokens.forEach((token, idx) => {
+          const prevToken = previousTokens[idx];
+          if (prevToken && prevToken.position !== token.position && 
+              token.position !== 'home' && prevToken.position !== 'home') {
+            // Token moved - start animation
+            newAnimations[`${playerId}-${idx}`] = {
+              from: prevToken.position,
+              to: token.position,
+              progress: 0,
+              playerId,
+              tokenIdx: idx,
+            };
+          }
+        });
+      });
+      
+      if (Object.keys(newAnimations).length > 0) {
+        setAnimatingTokens(newAnimations);
+      }
+    }
+    
+    previousGameStateRef.current = gameState;
+    
+    // Animation loop
+    const animate = () => {
+      drawBoard(ctx);
+      drawTokens(ctx);
+      
+      // Update animations
+      setAnimatingTokens(prev => {
+        const updated = { ...prev };
+        let hasActiveAnimations = false;
+        
+        Object.keys(updated).forEach(key => {
+          const anim = updated[key];
+          anim.progress += 0.1; // Animation speed
+          
+          if (anim.progress >= 1) {
+            delete updated[key];
+          } else {
+            hasActiveAnimations = true;
+          }
+        });
+        
+        if (hasActiveAnimations) {
+          animationFrameRef.current = requestAnimationFrame(animate);
+        }
+        
+        return updated;
+      });
+    };
+    
+    // Start animation if there are animating tokens
+    if (Object.keys(animatingTokens).length > 0) {
+      animationFrameRef.current = requestAnimationFrame(animate);
+    } else {
+      drawBoard(ctx);
+      drawTokens(ctx);
+    }
+    
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [gameState, availableMoves, animatingTokens]);
 
   const handleCanvasClick = (e) => {
     const canvas = canvasRef.current;
