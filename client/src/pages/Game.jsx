@@ -19,6 +19,7 @@ export default function Game() {
   const [winner, setWinner] = useState(null);
   const [availableMoves, setAvailableMoves] = useState([]);
   const [lastAction, setLastAction] = useState(null);
+  const [showFireworks, setShowFireworks] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -66,6 +67,12 @@ export default function Game() {
         setTimeout(() => setShowDiceAnimation(false), 1000);
       } else if (data.action === 'token_moved') {
         setAvailableMoves(data.availableMoves || []);
+        
+        // Check if token reached home (finished)
+        if (data.tokenFinished) {
+          setShowFireworks(true);
+          setTimeout(() => setShowFireworks(false), 4000);
+        }
         
         // Show move feedback
         if (data.captured && data.captured.length > 0) {
@@ -118,6 +125,16 @@ export default function Game() {
 
   const isCurrentPlayer = gameState?.currentPlayer?.id === user.id;
   const playerColor = gameState?.tokens?.[user.id]?.color || 'red';
+  
+  // Get dice color based on current player
+  const currentPlayerColor = gameState?.tokens?.[gameState?.currentPlayer?.id]?.color || 'yellow';
+  const diceColorMap = {
+    red: 'from-red-400 to-red-600',
+    green: 'from-green-400 to-green-600',
+    blue: 'from-blue-400 to-blue-600',
+    yellow: 'from-yellow-300 to-yellow-500'
+  };
+  const diceColor = diceColorMap[currentPlayerColor] || 'from-yellow-300 to-yellow-500';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-4 md:p-8">
@@ -175,9 +192,9 @@ export default function Game() {
                   {/* Dice positioned at center of board */}
                   <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
                     <div className="flex flex-col items-center gap-3 pointer-events-auto">
-                      {/* Dice Display */}
+                      {/* Dice Display with player color */}
                       <div
-                        className={`w-20 h-20 md:w-24 md:h-24 bg-gradient-to-br from-yellow-300 to-yellow-500 rounded-2xl shadow-2xl flex items-center justify-center text-4xl md:text-6xl font-bold text-white cursor-pointer transition-all duration-300 border-4 border-white ${
+                        className={`w-20 h-20 md:w-24 md:h-24 bg-gradient-to-br ${diceColor} rounded-2xl shadow-2xl flex items-center justify-center text-4xl md:text-6xl font-bold text-white cursor-pointer transition-all duration-300 border-4 border-white ${
                           showDiceAnimation ? 'animate-dice-roll' : ''
                         } ${isCurrentPlayer ? 'hover:scale-110 hover:shadow-3xl' : 'opacity-70'}`}
                         onClick={handleRollDice}
@@ -346,6 +363,34 @@ export default function Game() {
             <h2 className="text-4xl font-bold text-white mb-2">Victory!</h2>
             <p className="text-2xl text-yellow-900 font-bold mb-4">{winner.username} Won!</p>
             <div className="text-6xl animate-rotate">✨</div>
+          </div>
+        </div>
+      )}
+
+      {/* Fireworks Celebration when token reaches home */}
+      {showFireworks && (
+        <div className="fixed inset-0 pointer-events-none z-40">
+          {/* Firework particles */}
+          {[...Array(30)].map((_, i) => (
+            <div
+              key={`firework-${i}`}
+              className="fixed animate-firework"
+              style={{
+                left: `${20 + Math.random() * 60}%`,
+                top: `${20 + Math.random() * 60}%`,
+                animationDelay: `${Math.random() * 2}s`,
+                fontSize: `${20 + Math.random() * 20}px`,
+              }}
+            >
+              {['🎆', '🎇', '✨', '💥', '⭐', '🌟'][Math.floor(Math.random() * 6)]}
+            </div>
+          ))}
+          
+          {/* Center celebration message */}
+          <div className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-bounce">
+            <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-8 py-4 rounded-2xl shadow-2xl text-2xl font-bold">
+              🎉 Token Reached Home! 🎉
+            </div>
           </div>
         </div>
       )}

@@ -224,6 +224,7 @@ class LudoGameEngine {
       to: token.position,
       diceValue: this.diceValue,
       captured,
+      finished: token.finished,
       timestamp: Date.now(),
     });
 
@@ -274,6 +275,7 @@ class LudoGameEngine {
       extraTurn,
       reason,
       winner: this.winner,
+      tokenFinished: token.finished,
     };
   }
 
