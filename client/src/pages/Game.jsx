@@ -50,6 +50,28 @@ export default function Game() {
 
     newSocket.on('game:update', (data) => {
       setGameState(data.gameState);
+      
+      if (data.action === 'three_sixes_cancelled') {
+        setLastAction('⚠️ Three 6s in a row! First two count, third cancelled. Turn passes.');
+        setDiceValue(null);
+        setAvailableMoves([]);
+        return;
+      }
+      
+      if (data.action === 'no_tokens_outside') {
+        setLastAction('All tokens in home. Need 6 to start. Turn passes.');
+        setDiceValue(data.diceValue);
+        setAvailableMoves([]);
+        return;
+      }
+      
+      if (data.action === 'no_valid_moves') {
+        setLastAction('No valid moves available. Turn passes.');
+        setDiceValue(data.diceValue);
+        setAvailableMoves([]);
+        return;
+      }
+      
       if (data.diceValue) {
         setDiceValue(data.diceValue);
         setShowDiceAnimation(true);

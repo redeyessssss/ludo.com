@@ -103,7 +103,36 @@ class LudoGameEngine {
   // DICE LOGIC
   rollDice() {
     this.diceValue = Math.floor(Math.random() * 6) + 1;
-    return this.diceValue;
+    
+    // Check for 3 consecutive sixes - cancel the 3rd six
+    if (this.diceValue === 6) {
+      this.consecutiveSixes++;
+      if (this.consecutiveSixes >= 3) {
+        // Third six is cancelled - turn passes to next player
+        this.diceValue = null;
+        this.consecutiveSixes = 0;
+        this.nextTurn();
+        return { value: 6, cancelled: true, reason: 'three_sixes' };
+      }
+    } else {
+      this.consecutiveSixes = 0;
+    }
+    
+    return { value: this.diceValue, cancelled: false };
+  }
+  
+  // Check if player has any tokens outside home
+  hasTokensOutside(playerId) {
+    const playerTokens = this.tokens[playerId].tokens;
+    return playerTokens.some(token => token.position !== 'home' && !token.finished);
+  }
+  
+  // Check if player can make any valid move
+  canPlayerMove(playerId) {
+    if (!this.diceValue) return false;
+    
+    const playerTokens = this.tokens[playerId].tokens;
+    return playerTokens.some((token, idx) => this.canMoveToken(playerId, idx));
   }
 
   // TOKEN MOVE VALIDATION
@@ -250,17 +279,9 @@ class LudoGameEngine {
     let reason = '';
 
     if (this.diceValue === 6) {
-      this.consecutiveSixes++;
-      
-      // Max 3 consecutive sixes - on 3rd six, turn cancelled
-      if (this.consecutiveSixes >= 3) {
-        extraTurn = false;
-        this.consecutiveSixes = 0;
-        reason = 'three_sixes_limit';
-      } else {
-        extraTurn = true;
-        reason = 'rolled_six';
-      }
+      // Rolling 6 gives extra turn (already counted in consecutiveSixes)
+      extraTurn = true;
+      reason = 'rolled_six';
     } else {
       this.consecutiveSixes = 0;
       

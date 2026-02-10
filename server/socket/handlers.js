@@ -226,14 +226,59 @@ function setupSocketHandlers(io) {
         return;
       }
 
-      const diceValue = game.rollDice();
+      const rollResult = game.rollDice();
+      
+      // Check if third 6 was cancelled
+      if (rollResult.cancelled) {
+        io.to(gameId).emit('game:update', {
+          gameState: game.getGameState(),
+          diceValue: null,
+          availableMoves: [],
+          action: 'three_sixes_cancelled',
+          reason: 'three_sixes_limit',
+          message: '⚠️ Three 6s in a row! Turn passes to next player.',
+        });
+        return;
+      }
+      
+      const diceValue = rollResult.value;
       const availableMoves = game.getAvailableMoves(userId);
+      
+      // Check if player has no tokens outside and didn't roll 6
+      const hasTokensOutside = game.hasTokensOutside(userId);
+      if (!hasTokensOutside && diceValue !== 6) {
+        // No tokens outside and didn't roll 6 - turn passes
+        game.nextTurn();
+        io.to(gameId).emit('game:update', {
+          gameState: game.getGameState(),
+          diceValue,
+          availableMoves: [],
+          action: 'no_tokens_outside',
+          reason: 'need_six_to_start',
+          message: 'All tokens in home. Need 6 to start. Turn passes.',
+        });
+        return;
+      }
+      
+      // Check if player has no valid moves
+      if (availableMoves.length === 0 && diceValue !== 6) {
+        game.nextTurn();
+        io.to(gameId).emit('game:update', {
+          gameState: game.getGameState(),
+          diceValue,
+          availableMoves: [],
+          action: 'no_valid_moves',
+          message: 'No valid moves available. Turn passes.',
+        });
+        return;
+      }
       
       io.to(gameId).emit('game:update', {
         gameState: game.getGameState(),
         diceValue,
         availableMoves,
         action: 'dice_rolled',
+        reason: diceValue === 6 ? 'rolled_six' : null,
       });
     });
 
