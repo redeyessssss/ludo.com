@@ -3,20 +3,59 @@
 ## ✅ Current Status Check
 
 ### Backend (Render)
-- [ ] Backend is deployed on Render
-- [ ] Backend URL: `https://your-backend.onrender.com` (fill in your actual URL)
-- [ ] Backend is running (check Render dashboard logs)
+- [x] Backend is deployed on Render
+- [x] Backend URL: `https://ludo-backend-ujnr.onrender.com`
+- [x] Backend is running (health check confirmed)
 - [ ] Environment variables set in Render:
-  - [ ] `CLIENT_URL` = Your Vercel frontend URL
+  - [ ] `CLIENT_URL` = `https://ludo-com-eta.vercel.app`
   - [ ] `JWT_SECRET` = Some secret key
   - [ ] `NODE_ENV` = production
   - [ ] `PORT` = 3001
 
 ### Frontend (Vercel)
-- [ ] Frontend is deployed on Vercel
-- [ ] Frontend URL: `https://your-frontend.vercel.app` (fill in your actual URL)
+- [x] Frontend is deployed on Vercel
+- [x] Frontend URL: `https://ludo-com-eta.vercel.app`
 - [ ] Environment variable set in Vercel:
-  - [ ] `VITE_API_URL` = Your Render backend URL
+  - [ ] `VITE_API_URL` = `https://ludo-backend-ujnr.onrender.com`
+
+### Code Changes (v7.3.5)
+- [x] Login page now uses `VITE_API_URL` environment variable
+- [x] Register page now uses `VITE_API_URL` environment variable
+- [x] All pages now properly configured for production
+- [x] Changes committed and pushed to GitHub
+
+---
+
+## 🔧 NEXT STEPS - ACTION REQUIRED
+
+### Step 1: Set Backend URL in Vercel (CRITICAL)
+
+1. Go to [Vercel Dashboard](https://vercel.com/dashboard)
+2. Select your project: `ludo-com-eta`
+3. Go to **Settings** → **Environment Variables**
+4. Add new variable:
+   - **Name**: `VITE_API_URL`
+   - **Value**: `https://ludo-backend-ujnr.onrender.com`
+   - **Environment**: Production, Preview, Development (select all)
+5. Click **Save**
+6. Go to **Deployments** tab
+7. Click **...** on latest deployment → **Redeploy**
+
+### Step 2: Verify Frontend URL in Render
+
+1. Go to [Render Dashboard](https://dashboard.render.com)
+2. Select your backend service: `ludo-backend`
+3. Go to **Environment** tab
+4. Verify `CLIENT_URL` variable is set to:
+   - **Key**: `CLIENT_URL`
+   - **Value**: `https://ludo-com-eta.vercel.app`
+5. If not set or incorrect, update it and save (Render will auto-redeploy)
+
+### Step 3: Wait for Deployments
+
+- Vercel redeploy: ~2-3 minutes
+- Render redeploy (if needed): ~5-10 minutes
+- Total wait time: ~5-10 minutes
 
 ---
 
