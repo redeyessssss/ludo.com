@@ -10,28 +10,94 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchProfile();
-    fetchMatches();
-  }, [userId]);
+    // If viewing own profile and user is logged in
+    if (!userId && currentUser) {
+      fetchProfile();
+      fetchMatches();
+    } else if (userId) {
+      // Viewing another user's profile
+      fetchProfile();
+      fetchMatches();
+    } else {
+      // Not logged in and no userId - redirect to login
+      setLoading(false);
+    }
+  }, [userId, currentUser]);
 
   const fetchProfile = async () => {
+    if (!currentUser && !userId) {
+      setLoading(false);
+      return;
+    }
+    
     setLoading(true);
     try {
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      const response = await fetch(`${API_URL}/api/users/${userId || currentUser?.id}`);
+      const targetUserId = userId || currentUser?.id;
+      
+      // For guest users, create a mock profile
+      if (targetUserId?.startsWith('guest_')) {
+        setProfile({
+          id: targetUserId,
+          username: currentUser?.username || 'Guest',
+          rating: currentUser?.rating || 1000,
+          highestRating: currentUser?.highestRating || currentUser?.rating || 1000,
+          level: currentUser?.level || 1,
+          gamesPlayed: currentUser?.gamesPlayed || 0,
+          wins: currentUser?.wins || 0,
+          losses: currentUser?.losses || 0,
+          tokensCaptured: currentUser?.tokensCaptured || 0,
+          tokensFinished: currentUser?.tokensFinished || 0,
+          avatar: '/default-avatar.png',
+          createdAt: Date.now(),
+        });
+        setLoading(false);
+        return;
+      }
+      
+      const response = await fetch(`${API_URL}/api/users/${targetUserId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch profile');
+      }
       const data = await response.json();
       setProfile(data);
     } catch (error) {
       console.error('Failed to fetch profile:', error);
+      // If fetch fails but we have currentUser, show their data
+      if (currentUser && !userId) {
+        setProfile({
+          ...currentUser,
+          highestRating: currentUser.highestRating || currentUser.rating || 1000,
+          tokensCaptured: currentUser.tokensCaptured || 0,
+          tokensFinished: currentUser.tokensFinished || 0,
+          avatar: currentUser.avatar || '/default-avatar.png',
+          createdAt: currentUser.createdAt || Date.now(),
+        });
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const fetchMatches = async () => {
+    if (!currentUser && !userId) {
+      return;
+    }
+    
     try {
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      const response = await fetch(`${API_URL}/api/users/${userId || currentUser?.id}/matches?limit=10`);
+      const targetUserId = userId || currentUser?.id;
+      
+      // Skip for guest users
+      if (targetUserId?.startsWith('guest_')) {
+        setMatches([]);
+        return;
+      }
+      
+      const response = await fetch(`${API_URL}/api/users/${targetUserId}/matches?limit=10`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch matches');
+      }
       const data = await response.json();
       setMatches(data);
     } catch (error) {

@@ -31,7 +31,7 @@ router.post('/register', async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
+    // Create user with all profile fields
     const userId = `user_${Date.now()}`;
     const user = {
       id: userId,
@@ -39,11 +39,16 @@ router.post('/register', async (req, res) => {
       email,
       password: hashedPassword,
       rating: 1000,
+      highestRating: 1000,
       level: 1,
       gamesPlayed: 0,
       wins: 0,
       losses: 0,
       tokensCaptured: 0,
+      tokensFinished: 0,
+      matchHistory: [],
+      avatar: '/default-avatar.png',
+      bio: '',
       createdAt: Date.now(),
     };
 
