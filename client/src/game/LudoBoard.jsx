@@ -1,17 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 
-// VERSION 5.7.0 - Added smooth token movement animation with bounce effect
+// VERSION 5.11.0 - Fixed glow effect to only show on current player's movable tokens
 // CONSTANTS & CONFIG
 const MAIN_PATH_LENGTH = 52;
 const SAFE_CELLS = [0, 8, 13, 21, 26, 34, 39, 47]; // Safe spots: starting positions + star positions
 // Position mapping: 
-// 0 = (1,6) Red start
+// 0 = (1,6) Red start ⭐
 // 8 = (6,2) Top safe spot ⭐
-// 13 = (8,1) Green start  
+// 13 = (8,1) Green start ⭐
 // 21 = (12,6) Right safe spot ⭐
-// 26 = (13,8) Blue start
+// 26 = (13,8) Blue start ⭐
 // 34 = (8,12) Bottom safe spot ⭐
-// 39 = (6,13) Yellow start
+// 39 = (6,13) Yellow start ⭐
 // 47 = (2,8) Left safe spot ⭐
 const PLAYER_CONFIG = {
   red:    { start: 0,  entry: 50, homeStart: 100 },  // Red enters home from position 50 (0,7)
@@ -363,12 +363,18 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     
-    // Safe spots coordinates
+    // Safe spots coordinates (including starting positions for all players)
     const safeSpots = [
-      { x: 2, y: 8 },   // Left safe spot
-      { x: 6, y: 2 },   // Top safe spot
-      { x: 12, y: 6 },  // Right safe spot
-      { x: 8, y: 12 }   // Bottom safe spot
+      // Star-marked safe spots
+      { x: 2, y: 8 },   // Left safe spot ⭐
+      { x: 6, y: 2 },   // Top safe spot ⭐
+      { x: 12, y: 6 },  // Right safe spot ⭐
+      { x: 8, y: 12 },  // Bottom safe spot ⭐
+      // Starting positions for all players (also safe)
+      { x: 1, y: 6 },   // Red start ⭐
+      { x: 8, y: 1 },   // Green start ⭐
+      { x: 13, y: 8 },  // Blue start ⭐
+      { x: 6, y: 13 }   // Yellow start ⭐
     ];
     
     pathCells.forEach(cell => {
@@ -395,7 +401,7 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     });
   };
 
-  // Draw tokens - simple circular style like reference image
+  // Draw tokens - modern 3D style with gradients and effects
   const drawTokens = (ctx) => {
     if (!gameState || !gameState.tokens) return;
 
@@ -412,18 +418,22 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
         const animKey = `${playerId}-${idx}`;
         const animation = animatingTokens[animKey];
 
-        // If animating, interpolate position
-        if (animation && animation.progress < 1) {
-          const fromPos = getTokenCoordinates(animation.from, color, config, idx, homePaths, mainPath);
-          const toPos = getTokenCoordinates(token.position, color, config, idx, homePaths, mainPath);
+        // If animating with step-by-step movement
+        if (animation && animation.path && animation.currentStep < animation.path.length - 1) {
+          const fromPos = animation.path[animation.currentStep];
+          const toPos = animation.path[animation.currentStep + 1];
           
-          // Smooth interpolation
-          const progress = easeInOutQuad(animation.progress);
-          x = fromPos.x + (toPos.x - fromPos.x) * progress;
-          y = fromPos.y + (toPos.y - fromPos.y) * progress;
+          const fromCoords = getTokenCoordinates(fromPos, color, config, idx, homePaths, mainPath);
+          const toCoords = getTokenCoordinates(toPos, color, config, idx, homePaths, mainPath);
           
-          // Add bounce effect
-          const bounce = Math.sin(animation.progress * Math.PI) * 10;
+          // Smooth interpolation between cells
+          const progress = animation.stepProgress;
+          x = fromCoords.x + (toCoords.x - fromCoords.x) * progress;
+          y = fromCoords.y + (toCoords.y - fromCoords.y) * progress;
+          
+          // Add bounce/drop effect at each cell
+          const bounceHeight = 15;
+          const bounce = Math.sin(progress * Math.PI) * bounceHeight;
           y -= bounce;
         } else {
           // Normal position
@@ -441,41 +451,113 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
           stackOffset = tokensOnSameCell * 6;
         }
 
-        // Simple shadow
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+        // MODERN TOKEN DESIGN
+        const tokenX = x + stackOffset;
+        const tokenY = y;
+        
+        // Outer glow/shadow for depth
+        const glowGradient = ctx.createRadialGradient(tokenX, tokenY, TOKEN_RADIUS * 0.5, tokenX, tokenY, TOKEN_RADIUS + 8);
+        glowGradient.addColorStop(0, `${COLORS[color]}00`);
+        glowGradient.addColorStop(0.7, `${COLORS[color]}40`);
+        glowGradient.addColorStop(1, `${COLORS[color]}00`);
+        ctx.fillStyle = glowGradient;
         ctx.beginPath();
-        ctx.arc(x + stackOffset + 2, y + 2, TOKEN_RADIUS, 0, Math.PI * 2);
+        ctx.arc(tokenX, tokenY + 3, TOKEN_RADIUS + 6, 0, Math.PI * 2);
         ctx.fill();
 
-        // Token - solid color (matching reference image)
-        ctx.fillStyle = COLORS['token' + color.charAt(0).toUpperCase() + color.slice(1)];
+        // Main token body with gradient (3D effect)
+        const gradient = ctx.createRadialGradient(
+          tokenX - TOKEN_RADIUS * 0.3, 
+          tokenY - TOKEN_RADIUS * 0.3, 
+          TOKEN_RADIUS * 0.2,
+          tokenX, 
+          tokenY, 
+          TOKEN_RADIUS
+        );
+        
+        // Color-specific gradients for modern look
+        const gradientColors = {
+          red: ['#FF6B6B', '#EE5A6F', '#C92A2A'],
+          green: ['#51CF66', '#37B24D', '#2B8A3E'],
+          blue: ['#4DABF7', '#339AF0', '#1971C2'],
+          yellow: ['#FFE066', '#FCC419', '#FAB005']
+        };
+        
+        const colors = gradientColors[color];
+        gradient.addColorStop(0, colors[0]); // Light highlight
+        gradient.addColorStop(0.5, colors[1]); // Mid tone
+        gradient.addColorStop(1, colors[2]); // Dark edge
+        
+        ctx.fillStyle = gradient;
         ctx.beginPath();
-        ctx.arc(x + stackOffset, y, TOKEN_RADIUS, 0, Math.PI * 2);
+        ctx.arc(tokenX, tokenY, TOKEN_RADIUS, 0, Math.PI * 2);
         ctx.fill();
 
-        // Black border
-        ctx.strokeStyle = COLORS.black;
-        ctx.lineWidth = 2;
+        // Inner highlight for glossy effect
+        const highlightGradient = ctx.createRadialGradient(
+          tokenX - TOKEN_RADIUS * 0.4,
+          tokenY - TOKEN_RADIUS * 0.4,
+          0,
+          tokenX - TOKEN_RADIUS * 0.4,
+          tokenY - TOKEN_RADIUS * 0.4,
+          TOKEN_RADIUS * 0.6
+        );
+        highlightGradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
+        highlightGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.3)');
+        highlightGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        ctx.fillStyle = highlightGradient;
+        ctx.beginPath();
+        ctx.arc(tokenX - TOKEN_RADIUS * 0.2, tokenY - TOKEN_RADIUS * 0.2, TOKEN_RADIUS * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Outer border with gradient
+        const borderGradient = ctx.createLinearGradient(
+          tokenX, tokenY - TOKEN_RADIUS,
+          tokenX, tokenY + TOKEN_RADIUS
+        );
+        borderGradient.addColorStop(0, 'rgba(255, 255, 255, 0.5)');
+        borderGradient.addColorStop(0.5, 'rgba(0, 0, 0, 0.3)');
+        borderGradient.addColorStop(1, 'rgba(0, 0, 0, 0.6)');
+        ctx.strokeStyle = borderGradient;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(tokenX, tokenY, TOKEN_RADIUS, 0, Math.PI * 2);
         ctx.stroke();
         
-        // Glow effect during animation
-        if (animation && animation.progress < 1) {
-          ctx.strokeStyle = COLORS['token' + color.charAt(0).toUpperCase() + color.slice(1)];
-          ctx.lineWidth = 4;
-          ctx.globalAlpha = 0.5 * (1 - animation.progress);
+        // Inner ring for extra detail
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(tokenX, tokenY, TOKEN_RADIUS - 3, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Animated glow during movement
+        if (animation && animation.path && animation.currentStep < animation.path.length - 1) {
+          const pulseSize = TOKEN_RADIUS + 12 + Math.sin(animation.stepProgress * Math.PI * 4) * 4;
+          ctx.strokeStyle = colors[0];
+          ctx.lineWidth = 3;
+          ctx.globalAlpha = 0.6;
           ctx.beginPath();
-          ctx.arc(x + stackOffset, y, TOKEN_RADIUS + 8, 0, Math.PI * 2);
+          ctx.arc(tokenX, tokenY, pulseSize, 0, Math.PI * 2);
           ctx.stroke();
           ctx.globalAlpha = 1;
         }
 
-        // Highlight available moves
-        if (availableMoves.includes(idx) && gameState.currentPlayer?.id === currentUserId && !animation) {
-          ctx.strokeStyle = '#00FF00';
+        // Highlight available moves with pulsing ring - ONLY for current player's tokens
+        if (availableMoves.includes(idx) && 
+            playerId === currentUserId && 
+            gameState.currentPlayer?.id === currentUserId && 
+            !animation) {
+          const time = Date.now() / 1000;
+          const pulse = Math.sin(time * 3) * 0.3 + 0.7;
+          ctx.strokeStyle = `rgba(0, 255, 100, ${pulse})`;
           ctx.lineWidth = 4;
+          ctx.shadowColor = '#00FF64';
+          ctx.shadowBlur = 10;
           ctx.beginPath();
-          ctx.arc(x + stackOffset, y, TOKEN_RADIUS + 6, 0, Math.PI * 2);
+          ctx.arc(tokenX, tokenY, TOKEN_RADIUS + 8, 0, Math.PI * 2);
           ctx.stroke();
+          ctx.shadowBlur = 0;
         }
       });
     });
@@ -519,9 +601,53 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     }
   };
   
-  // Easing function for smooth animation
-  const easeInOutQuad = (t) => {
-    return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+  // Helper function to calculate path between two positions
+  const getPathBetweenPositions = (fromPos, toPos, color, config, homePaths, mainPath) => {
+    const path = [];
+    
+    // If moving on main path
+    if (typeof fromPos === 'number' && typeof toPos === 'number' && 
+        fromPos < 100 && toPos < 100) {
+      // Calculate steps on main circular path
+      let current = fromPos;
+      while (current !== toPos) {
+        path.push(current);
+        current = (current + 1) % MAIN_PATH_LENGTH;
+        if (path.length > 20) break; // Safety limit
+      }
+      path.push(toPos);
+    } 
+    // If entering home path
+    else if (typeof fromPos === 'number' && typeof toPos === 'number' &&
+             fromPos < 100 && toPos >= config.homeStart) {
+      // Walk to entry point, then into home path
+      const entry = config.entry;
+      let current = fromPos;
+      while (current !== entry) {
+        path.push(current);
+        current = (current + 1) % MAIN_PATH_LENGTH;
+        if (path.length > 20) break;
+      }
+      // Add home path cells
+      const homeStart = config.homeStart;
+      const homeEnd = toPos;
+      for (let i = homeStart; i <= homeEnd; i++) {
+        path.push(i);
+      }
+    }
+    // If moving within home path
+    else if (typeof fromPos === 'number' && typeof toPos === 'number' &&
+             fromPos >= config.homeStart && toPos >= config.homeStart) {
+      for (let i = fromPos; i <= toPos; i++) {
+        path.push(i);
+      }
+    }
+    // Default: just from and to
+    else {
+      path.push(fromPos, toPos);
+    }
+    
+    return path;
   };
 
   useEffect(() => {
@@ -531,7 +657,7 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     const ctx = canvas.getContext('2d');
     
     // Detect token movement and start animation
-    if (gameState && previousGameStateRef.current) {
+    if (gameState && gameState.tokens && previousGameStateRef.current && previousGameStateRef.current.tokens) {
       const newAnimations = {};
       
       Object.keys(gameState.tokens).forEach(playerId => {
@@ -540,14 +666,28 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
         
         currentTokens.forEach((token, idx) => {
           const prevToken = previousTokens[idx];
-          if (prevToken && prevToken.position !== token.position && 
-              token.position !== 'home' && prevToken.position !== 'home') {
-            // Token moved - start animation
-            console.log(`🎬 Animation started: Token ${idx} moved from ${prevToken.position} to ${token.position}`);
+          // Check if token moved (and not just coming out of home or going to finish)
+          if (prevToken && 
+              prevToken.position !== token.position && 
+              token.position !== 'home' && 
+              prevToken.position !== 'home' &&
+              !token.finished &&
+              !prevToken.finished) {
+            // Token moved - create step-by-step path animation
+            const path = getPathBetweenPositions(
+              prevToken.position, 
+              token.position, 
+              gameState.tokens[playerId].color,
+              PLAYER_CONFIG[gameState.tokens[playerId].color],
+              getHomePaths(),
+              getMainPath()
+            );
+            
+            console.log(`🎬 Animation started: Player ${playerId} Token ${idx} walking through ${path.length} cells`);
             newAnimations[`${playerId}-${idx}`] = {
-              from: prevToken.position,
-              to: token.position,
-              progress: 0,
+              path: path,
+              currentStep: 0,
+              stepProgress: 0,
               playerId,
               tokenIdx: idx,
             };
@@ -556,12 +696,15 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
       });
       
       if (Object.keys(newAnimations).length > 0) {
-        console.log('🎬 Starting animations:', newAnimations);
+        console.log('🎬 Starting animations:', Object.keys(newAnimations).length, 'tokens');
         setAnimatingTokens(newAnimations);
       }
     }
     
-    previousGameStateRef.current = gameState ? JSON.parse(JSON.stringify(gameState)) : null;
+    // Store deep copy of current state for next comparison
+    if (gameState && gameState.tokens) {
+      previousGameStateRef.current = JSON.parse(JSON.stringify(gameState));
+    }
     
     // Animation loop
     const animate = () => {
@@ -575,13 +718,26 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
         
         Object.keys(updated).forEach(key => {
           const anim = updated[key];
-          anim.progress += 0.05; // Slower animation speed for visibility
           
-          if (anim.progress >= 1) {
-            console.log(`✅ Animation complete: ${key}`);
-            delete updated[key];
-          } else {
-            hasActiveAnimations = true;
+          if (anim.path) {
+            // Step-by-step animation
+            anim.stepProgress += 0.04; // Speed per cell (0.04 = slower, more visible movement)
+            
+            if (anim.stepProgress >= 1) {
+              // Move to next cell
+              anim.currentStep++;
+              anim.stepProgress = 0;
+              
+              if (anim.currentStep >= anim.path.length - 1) {
+                // Animation complete
+                console.log(`✅ Animation complete: ${key} walked through ${anim.path.length} cells`);
+                delete updated[key];
+              } else {
+                hasActiveAnimations = true;
+              }
+            } else {
+              hasActiveAnimations = true;
+            }
           }
         });
         
@@ -593,12 +749,14 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
       });
     };
     
-    // Start animation if there are animating tokens
+    // Always draw the board
+    drawBoard(ctx);
+    drawTokens(ctx);
+    
+    // Start animation loop if there are animating tokens
     if (Object.keys(animatingTokens).length > 0) {
+      console.log('🎬 Animation loop started');
       animationFrameRef.current = requestAnimationFrame(animate);
-    } else {
-      drawBoard(ctx);
-      drawTokens(ctx);
     }
     
     return () => {
@@ -677,8 +835,8 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
   return (
     <div className="w-full flex flex-col items-center justify-center">
       {/* Version indicator */}
-      <div className="mb-4 px-4 py-2 bg-blue-500 text-white rounded-lg font-bold text-sm">
-        Board Version: 5.5.0 - Safe Spots ⭐
+      <div className="mb-4 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-bold text-sm shadow-lg">
+        Board Version: 5.11.0 - Smart Token Glow ✨
       </div>
       
       <div className="relative bg-white rounded-xl shadow-2xl overflow-hidden border-4 border-black">

@@ -1,33 +1,70 @@
 const express = require('express');
 const router = express.Router();
 
-// Mock leaderboard data (replace with database queries)
-const generateMockLeaderboard = (timeframe) => {
-  const mockPlayers = [
-    { id: '1', username: 'ProPlayer123', rating: 1850, wins: 145, losses: 32, level: 25, avatar: null },
-    { id: '2', username: 'LudoMaster', rating: 1720, wins: 128, losses: 45, level: 22, avatar: null },
-    { id: '3', username: 'DiceKing', rating: 1680, wins: 112, losses: 38, level: 20, avatar: null },
-    { id: '4', username: 'TokenHunter', rating: 1590, wins: 98, losses: 42, level: 18, avatar: null },
-    { id: '5', username: 'BoardBoss', rating: 1520, wins: 87, losses: 51, level: 16, avatar: null },
-    { id: '6', username: 'QuickWinner', rating: 1480, wins: 76, losses: 44, level: 15, avatar: null },
-    { id: '7', username: 'StrategyPro', rating: 1420, wins: 69, losses: 48, level: 14, avatar: null },
-    { id: '8', username: 'LuckyRoller', rating: 1380, wins: 62, losses: 52, level: 13, avatar: null },
-    { id: '9', username: 'GameChamp', rating: 1340, wins: 58, losses: 49, level: 12, avatar: null },
-    { id: '10', username: 'TopPlayer', rating: 1300, wins: 54, losses: 46, level: 11, avatar: null },
-  ];
+// Import shared users map
+let users = new Map();
+let matchHistory = new Map(); // Store match history
 
-  return mockPlayers;
+// Function to set users reference
+router.setUsers = (usersMap) => {
+  users = usersMap;
 };
 
-// Get leaderboard
+// Function to set match history reference
+router.setMatchHistory = (historyMap) => {
+  matchHistory = historyMap;
+};
+
+// Get leaderboard with real user data
 router.get('/', (req, res) => {
   try {
     const { timeframe = 'all', limit = 100 } = req.query;
+    
+    // Convert users map to array and filter by timeframe
+    const now = Date.now();
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    const oneWeekMs = 7 * oneDayMs;
+    
+    let filteredUsers = Array.from(users.values())
+      .filter(user => !user.isGuest && user.gamesPlayed > 0);
+    
+    // Apply timeframe filter based on recent games
+    if (timeframe === 'daily') {
+      filteredUsers = filteredUsers.filter(user => {
+        const recentGames = (user.matchHistory || []).filter(
+          match => now - match.timestamp < oneDayMs
+        );
+        return recentGames.length > 0;
+      });
+    } else if (timeframe === 'weekly') {
+      filteredUsers = filteredUsers.filter(user => {
+        const recentGames = (user.matchHistory || []).filter(
+          match => now - match.timestamp < oneWeekMs
+        );
+        return recentGames.length > 0;
+      });
+    }
+    
+    // Sort by rating (descending)
+    const leaderboard = filteredUsers
+      .sort((a, b) => (b.rating || 1000) - (a.rating || 1000))
+      .slice(0, parseInt(limit))
+      .map((user, index) => ({
+        id: user.id,
+        username: user.username,
+        rating: user.rating || 1000,
+        wins: user.wins || 0,
+        losses: user.losses || 0,
+        gamesPlayed: user.gamesPlayed || 0,
+        level: user.level || 1,
+        avatar: user.avatar || null,
+        rank: index + 1,
+        winRate: user.gamesPlayed > 0 
+          ? ((user.wins / user.gamesPlayed) * 100).toFixed(1) 
+          : 0,
+      }));
 
-    // In production, query database with timeframe filter
-    const leaderboard = generateMockLeaderboard(timeframe);
-
-    res.json(leaderboard.slice(0, parseInt(limit)));
+    res.json(leaderboard);
   } catch (error) {
     console.error('Leaderboard error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -40,8 +77,33 @@ router.get('/rank/:userId', (req, res) => {
     const { userId } = req.params;
     const { timeframe = 'all' } = req.query;
 
-    const leaderboard = generateMockLeaderboard(timeframe);
-    const rank = leaderboard.findIndex(p => p.id === userId) + 1;
+    const now = Date.now();
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    const oneWeekMs = 7 * oneDayMs;
+    
+    let filteredUsers = Array.from(users.values())
+      .filter(user => !user.isGuest && user.gamesPlayed > 0);
+    
+    // Apply timeframe filter
+    if (timeframe === 'daily') {
+      filteredUsers = filteredUsers.filter(user => {
+        const recentGames = (user.matchHistory || []).filter(
+          match => now - match.timestamp < oneDayMs
+        );
+        return recentGames.length > 0;
+      });
+    } else if (timeframe === 'weekly') {
+      filteredUsers = filteredUsers.filter(user => {
+        const recentGames = (user.matchHistory || []).filter(
+          match => now - match.timestamp < oneWeekMs
+        );
+        return recentGames.length > 0;
+      });
+    }
+    
+    // Sort by rating
+    const sortedUsers = filteredUsers.sort((a, b) => (b.rating || 1000) - (a.rating || 1000));
+    const rank = sortedUsers.findIndex(u => u.id === userId) + 1;
 
     if (rank === 0) {
       return res.status(404).json({ message: 'User not found in leaderboard' });
@@ -49,8 +111,8 @@ router.get('/rank/:userId', (req, res) => {
 
     res.json({
       rank,
-      total: leaderboard.length,
-      percentile: ((leaderboard.length - rank) / leaderboard.length) * 100,
+      total: sortedUsers.length,
+      percentile: ((sortedUsers.length - rank) / sortedUsers.length) * 100,
     });
   } catch (error) {
     console.error('Get rank error:', error);

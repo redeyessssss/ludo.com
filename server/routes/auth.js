@@ -6,6 +6,9 @@ const jwt = require('jsonwebtoken');
 // In-memory user storage (replace with database)
 const users = new Map();
 
+// Export users map for use in other modules
+router.users = users;
+
 // Register
 router.post('/register', async (req, res) => {
   try {

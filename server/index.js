@@ -39,6 +39,10 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Share users map between routes
+userRoutes.setUsers(authRoutes.users);
+leaderboardRoutes.setUsers(authRoutes.users);
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -49,8 +53,8 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Socket.io setup
-setupSocketHandlers(io);
+// Socket.io setup - pass users map for rating updates
+setupSocketHandlers(io, authRoutes.users);
 
 const PORT = process.env.PORT || 3001;
 

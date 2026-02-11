@@ -1,8 +1,13 @@
 const express = require('express');
 const router = express.Router();
 
-// Mock user data (replace with database)
-const users = new Map();
+// Import shared users map from auth
+let users = new Map();
+
+// Function to set users reference
+router.setUsers = (usersMap) => {
+  users = usersMap;
+};
 
 // Get user profile
 router.get('/:userId', (req, res) => {
@@ -70,9 +75,33 @@ router.get('/:userId/stats', (req, res) => {
       rating: user.rating || 1000,
       level: user.level || 1,
       tokensCaptured: user.tokensCaptured || 0,
+      tokensFinished: user.tokensFinished || 0,
+      highestRating: user.highestRating || user.rating || 1000,
     });
   } catch (error) {
     console.error('Get stats error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get user match history
+router.get('/:userId/matches', (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { limit = 20 } = req.query;
+    const user = users.get(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const matches = (user.matchHistory || [])
+      .sort((a, b) => b.timestamp - a.timestamp)
+      .slice(0, parseInt(limit));
+
+    res.json(matches);
+  } catch (error) {
+    console.error('Get matches error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

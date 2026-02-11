@@ -49,7 +49,13 @@ export default function Game() {
     });
 
     newSocket.on('game:update', (data) => {
+      console.log('📥 Game update received:', data.action, data);
       setGameState(data.gameState);
+      
+      if (data.action === 'player_left') {
+        setLastAction(`⚠️ ${data.leftPlayer} left the game. ${data.message}`);
+        return;
+      }
       
       if (data.action === 'three_sixes_cancelled') {
         setLastAction('⚠️ Three 6s in a row! First two count, third cancelled. Turn passes.');
@@ -73,6 +79,7 @@ export default function Game() {
       }
       
       if (data.diceValue) {
+        console.log('🎲 Dice rolled:', data.diceValue);
         setDiceValue(data.diceValue);
         setShowDiceAnimation(true);
         setAvailableMoves(data.availableMoves || []);
@@ -88,24 +95,33 @@ export default function Game() {
         
         setTimeout(() => setShowDiceAnimation(false), 1000);
       } else if (data.action === 'token_moved') {
-        setAvailableMoves(data.availableMoves || []);
+        console.log('🚀 Token moved! tokenFinished:', data.tokenFinished, 'extraTurn:', data.extraTurn);
+        
+        // If no extra turn, clear everything and pass turn
+        if (!data.extraTurn) {
+          console.log('🔄 Turn passed - clearing dice and moves');
+          setDiceValue(null);
+          setAvailableMoves([]);
+        } else {
+          // Has extra turn, set available moves
+          setAvailableMoves(data.availableMoves || []);
+        }
         
         // Check if token reached home (finished)
-        console.log('🎯 Token moved, tokenFinished:', data.tokenFinished);
-        if (data.tokenFinished) {
-          console.log('🎆 FIREWORKS! Token reached home!');
+        if (data.tokenFinished === true) {
+          console.log('🎆 FIREWORKS TRIGGERED! Token reached home!');
           setShowFireworks(true);
+          setLastAction('🎉🎆 TOKEN REACHED HOME! 🎆🎉');
           setTimeout(() => {
             console.log('🎆 Fireworks ended');
             setShowFireworks(false);
           }, 4000);
         }
-        
         // Show move feedback
-        if (data.captured && data.captured.length > 0) {
-          setLastAction(`🎯 Captured ${data.captured.length} token(s)!`);
+        else if (data.captured && data.captured.length > 0) {
+          setLastAction(`🎯 Captured ${data.captured.length} token(s)! Extra turn!`);
         } else if (data.extraTurn) {
-          setLastAction('🎉 Extra turn!');
+          setLastAction('🎉 Extra turn! Roll again!');
         } else {
           setLastAction('✓ Move complete. Next player\'s turn!');
         }
@@ -115,8 +131,24 @@ export default function Game() {
     newSocket.on('game:end', (data) => {
       setWinner(data.winner);
       setShowWinAnimation(true);
+      
+      const isRanked = data.isRanked;
+      const ratingChanges = data.ratingChanges || {};
+      const myRatingChange = ratingChanges[user.id];
+      
+      let message = data.reason === 'opponents_left' 
+        ? `🏆 ${data.winner.username} wins!\n\nAll opponents have left the game.`
+        : `🎉 ${data.winner.username} won the game!`;
+      
+      // Add rating change info for ranked matches
+      if (isRanked && myRatingChange) {
+        const change = myRatingChange.change;
+        const changeText = change >= 0 ? `+${change}` : change;
+        message += `\n\n📊 Ranked Match\nRating: ${myRatingChange.old} → ${myRatingChange.new} (${changeText})`;
+      }
+      
       setTimeout(() => {
-        alert(`🎉 ${data.winner.username} won the game!`);
+        alert(message);
         navigate('/dashboard');
       }, 2000);
     });
@@ -125,12 +157,34 @@ export default function Game() {
       setChatMessages(prev => [...prev, data]);
     });
 
-    return () => newSocket.close();
+    // Handle tab close / page refresh
+    const handleBeforeUnload = () => {
+      if (newSocket && newSocket.connected) {
+        console.log('🚪 Tab closing - disconnecting from game');
+        newSocket.close();
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      newSocket.close();
+    };
   }, [user, navigate, setGameState, setDiceValue]);
 
   const handleRollDice = () => {
-    if (rolling || !socket || gameState?.currentPlayer?.id !== user.id) return;
+    // Prevent rolling if:
+    // 1. Already rolling
+    // 2. No socket connection
+    // 3. Not current player
+    // 4. Already have available moves (already rolled, need to move first)
+    if (rolling || !socket || gameState?.currentPlayer?.id !== user.id || availableMoves.length > 0) {
+      console.log('❌ Cannot roll:', { rolling, hasSocket: !!socket, isCurrentPlayer: gameState?.currentPlayer?.id === user.id, availableMoves: availableMoves.length });
+      return;
+    }
     
+    console.log('🎲 Rolling dice...');
     setRolling(true);
     setShowDiceAnimation(true);
     
@@ -146,6 +200,13 @@ export default function Game() {
 
   const handleSendMessage = () => {
     if (!message.trim() || !socket) return;
+    
+    // Check if user is registered (has a real account, not guest)
+    if (!user || user.isGuest || !user.id || user.id.startsWith('guest_')) {
+      alert('⚠️ Chat is only available for registered users. Please sign up or log in to use chat.');
+      return;
+    }
+    
     socket.emit('chat:send', { gameId, userId: user.id, message });
     setMessage('');
   };
@@ -233,14 +294,14 @@ export default function Game() {
                       {isCurrentPlayer && (
                         <button
                           onClick={handleRollDice}
-                          disabled={rolling}
+                          disabled={rolling || availableMoves.length > 0}
                           className={`px-4 py-2 rounded-lg font-bold text-sm transition-all duration-300 transform ${
-                            !rolling
+                            !rolling && availableMoves.length === 0
                               ? 'bg-gradient-to-r from-green-400 to-green-600 text-white hover:scale-105 active:scale-95 shadow-lg'
                               : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                           }`}
                         >
-                          {rolling ? 'Rolling...' : 'Roll'}
+                          {rolling ? 'Rolling...' : availableMoves.length > 0 ? 'Move Token' : 'Roll'}
                         </button>
                       )}
                     </div>
@@ -314,6 +375,14 @@ export default function Game() {
             {/* Chat */}
             <div className="bg-white rounded-2xl shadow-2xl p-4 md:p-6 flex flex-col h-64 md:h-80 animate-slide-in-right" style={{ animationDelay: '0.1s' }}>
               <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-3 md:mb-4">💬 Chat</h3>
+              
+              {/* Chat restriction notice for guests */}
+              {(!user || user.isGuest || user.id?.startsWith('guest_')) && (
+                <div className="mb-3 p-2 bg-yellow-50 border border-yellow-300 rounded-lg text-xs text-yellow-800">
+                  🔒 Chat is only available for registered users. <a href="/register" className="underline font-semibold">Sign up</a> or <a href="/login" className="underline font-semibold">log in</a> to chat.
+                </div>
+              )}
+              
               <div className="flex-1 overflow-y-auto mb-3 md:mb-4 space-y-2 bg-gray-50 rounded-lg p-2 md:p-3">
                 {chatMessages.length === 0 ? (
                   <p className="text-gray-400 text-xs md:text-sm text-center py-8">No messages yet...</p>
@@ -332,12 +401,14 @@ export default function Game() {
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                  placeholder="Type message..."
-                  className="flex-1 px-2 md:px-3 py-2 border-2 border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                  placeholder={user && !user.isGuest && !user.id?.startsWith('guest_') ? "Type message..." : "Login to chat..."}
+                  disabled={!user || user.isGuest || user.id?.startsWith('guest_')}
+                  className="flex-1 px-2 md:px-3 py-2 border-2 border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
                 />
                 <button
                   onClick={handleSendMessage}
-                  className="px-3 md:px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold text-sm transition-all duration-300 hover:scale-105 active:scale-95"
+                  disabled={!user || user.isGuest || user.id?.startsWith('guest_')}
+                  className="px-3 md:px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold text-sm transition-all duration-300 hover:scale-105 active:scale-95 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:hover:scale-100"
                 >
                   Send
                 </button>

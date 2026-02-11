@@ -13,6 +13,8 @@ export default function Dashboard() {
   const [searchMode, setSearchMode] = useState('');
   const [queuePosition, setQueuePosition] = useState(0);
   const [connectionStatus, setConnectionStatus] = useState('connecting');
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [inviteCode, setInviteCode] = useState('');
 
   useEffect(() => {
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -108,6 +110,18 @@ export default function Dashboard() {
     }
   };
 
+  const handleJoinPrivate = () => {
+    setShowJoinModal(true);
+  };
+
+  const joinRoomWithCode = () => {
+    if (inviteCode.trim() && socket && user) {
+      navigate(`/lobby/${inviteCode.trim()}`);
+      setShowJoinModal(false);
+      setInviteCode('');
+    }
+  };
+
   const cancelSearch = () => {
     if (socket && user) {
       socket.emit('matchmaking:cancel', { 
@@ -182,6 +196,57 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* Join Private Room Modal */}
+        {showJoinModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="card max-w-md w-full">
+              <div className="text-center mb-6">
+                <div className="text-5xl mb-4">🔑</div>
+                <h2 className="text-2xl font-bold mb-2">Join Private Room</h2>
+                <p className="text-gray-600">Enter the invite code from your friend</p>
+              </div>
+              
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Invite Code
+                </label>
+                <input
+                  type="text"
+                  value={inviteCode}
+                  onChange={(e) => setInviteCode(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && joinRoomWithCode()}
+                  placeholder="Paste invite code here..."
+                  className="input-field text-center font-mono text-lg"
+                  autoFocus
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowJoinModal(false);
+                    setInviteCode('');
+                  }}
+                  className="btn-secondary flex-1"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={joinRoomWithCode}
+                  disabled={!inviteCode.trim()}
+                  className={`flex-1 font-semibold py-3 px-6 rounded-lg transition-all duration-300 ${
+                    inviteCode.trim()
+                      ? 'bg-primary hover:bg-blue-600 text-white hover:scale-105 active:scale-95'
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  Join Room
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="card mb-8">
           <div className="flex justify-between items-center">
             <div>
@@ -203,7 +268,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <button onClick={handleQuickPlay} className="card hover:shadow-2xl transition-all cursor-pointer">
             <div className="text-5xl mb-4">⚡</div>
             <h3 className="text-2xl font-bold mb-2">Quick Play</h3>
@@ -228,8 +293,14 @@ export default function Dashboard() {
 
           <button onClick={handleCreatePrivate} className="card hover:shadow-2xl transition-all cursor-pointer">
             <div className="text-5xl mb-4">🔒</div>
-            <h3 className="text-2xl font-bold mb-2">Private Room</h3>
-            <p className="text-gray-600">Play with friends</p>
+            <h3 className="text-2xl font-bold mb-2">Create Room</h3>
+            <p className="text-gray-600">Host a private game</p>
+          </button>
+
+          <button onClick={handleJoinPrivate} className="card hover:shadow-2xl transition-all cursor-pointer">
+            <div className="text-5xl mb-4">🔑</div>
+            <h3 className="text-2xl font-bold mb-2">Join Room</h3>
+            <p className="text-gray-600">Enter invite code</p>
           </button>
         </div>
 
