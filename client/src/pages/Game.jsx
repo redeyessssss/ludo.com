@@ -45,11 +45,27 @@ export default function Game() {
     });
 
     newSocket.on('game:state', (data) => {
+      console.log('🎮 Game state received:', {
+        playerCount: data.players?.length,
+        players: data.players?.map(p => `${p.username} (${p.isBot ? 'BOT' : 'HUMAN'}, ID: ${p.id})`),
+        currentPlayer: data.currentPlayer?.username,
+        currentPlayerId: data.currentPlayer?.id,
+        myUserId: user.id,
+        isMyTurn: data.currentPlayer?.id === user.id,
+        isBotGame: data.players?.some(p => p.isBot)
+      });
       setGameState(data);
     });
 
     newSocket.on('game:update', (data) => {
-      console.log('📥 Game update received:', data.action, data);
+      console.log('📥 Game update received:', {
+        action: data.action,
+        botAction: data.botAction,
+        currentPlayer: data.gameState?.currentPlayer?.username,
+        isBot: data.gameState?.currentPlayer?.isBot,
+        diceValue: data.diceValue,
+        availableMoves: data.availableMoves?.length
+      });
       setGameState(data.gameState);
       
       if (data.action === 'player_left') {

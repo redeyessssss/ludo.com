@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-// VERSION 5.11.0 - Fixed glow effect to only show on current player's movable tokens
+// VERSION 5.12.0 - Enhanced token animation matching homepage (smooth bounce, extra glow)
 // CONSTANTS & CONFIG
 const MAIN_PATH_LENGTH = 52;
 const SAFE_CELLS = [0, 8, 13, 21, 26, 34, 39, 47]; // Safe spots: starting positions + star positions
@@ -157,10 +157,10 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
       green: [
         { x: 10, y: 2 }, { x: 12, y: 2 }, { x: 10, y: 4 }, { x: 12, y: 4 }
       ],
-      blue: [
+      yellow: [
         { x: 2, y: 10 }, { x: 4, y: 10 }, { x: 2, y: 12 }, { x: 4, y: 12 }
       ],
-      yellow: [
+      blue: [
         { x: 10, y: 10 }, { x: 12, y: 10 }, { x: 10, y: 12 }, { x: 12, y: 12 }
       ],
     };
@@ -426,12 +426,12 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
           const fromCoords = getTokenCoordinates(fromPos, color, config, idx, homePaths, mainPath);
           const toCoords = getTokenCoordinates(toPos, color, config, idx, homePaths, mainPath);
           
-          // Smooth interpolation between cells
+          // Smooth interpolation between cells - EXACT MATCH TO HOMEPAGE
           const progress = animation.stepProgress;
           x = fromCoords.x + (toCoords.x - fromCoords.x) * progress;
           y = fromCoords.y + (toCoords.y - fromCoords.y) * progress;
           
-          // Add bounce/drop effect at each cell
+          // Bounce effect - EXACT MATCH TO HOMEPAGE (15px bounce)
           const bounceHeight = 15;
           const bounce = Math.sin(progress * Math.PI) * bounceHeight;
           y -= bounce;
@@ -455,24 +455,34 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
         const tokenX = x + stackOffset;
         const tokenY = y;
         
+        // Calculate bounce-based scale for animation - EXACT MATCH TO HOMEPAGE
+        let tokenScale = 1;
+        if (animation && animation.path && animation.currentStep < animation.path.length - 1) {
+          const progress = animation.stepProgress;
+          const bounce = Math.sin(progress * Math.PI) * 15;
+          tokenScale = 1 + bounce * 0.01; // Scale effect matching homepage
+        }
+        
+        const scaledRadius = TOKEN_RADIUS * tokenScale;
+        
         // Outer glow/shadow for depth
-        const glowGradient = ctx.createRadialGradient(tokenX, tokenY, TOKEN_RADIUS * 0.5, tokenX, tokenY, TOKEN_RADIUS + 8);
+        const glowGradient = ctx.createRadialGradient(tokenX, tokenY, scaledRadius * 0.5, tokenX, tokenY, scaledRadius + 8);
         glowGradient.addColorStop(0, `${COLORS[color]}00`);
         glowGradient.addColorStop(0.7, `${COLORS[color]}40`);
         glowGradient.addColorStop(1, `${COLORS[color]}00`);
         ctx.fillStyle = glowGradient;
         ctx.beginPath();
-        ctx.arc(tokenX, tokenY + 3, TOKEN_RADIUS + 6, 0, Math.PI * 2);
+        ctx.arc(tokenX, tokenY + 3, scaledRadius + 6, 0, Math.PI * 2);
         ctx.fill();
 
         // Main token body with gradient (3D effect)
         const gradient = ctx.createRadialGradient(
-          tokenX - TOKEN_RADIUS * 0.3, 
-          tokenY - TOKEN_RADIUS * 0.3, 
-          TOKEN_RADIUS * 0.2,
+          tokenX - scaledRadius * 0.3, 
+          tokenY - scaledRadius * 0.3, 
+          scaledRadius * 0.2,
           tokenX, 
           tokenY, 
-          TOKEN_RADIUS
+          scaledRadius
         );
         
         // Color-specific gradients for modern look
@@ -490,30 +500,30 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
         
         ctx.fillStyle = gradient;
         ctx.beginPath();
-        ctx.arc(tokenX, tokenY, TOKEN_RADIUS, 0, Math.PI * 2);
+        ctx.arc(tokenX, tokenY, scaledRadius, 0, Math.PI * 2);
         ctx.fill();
 
         // Inner highlight for glossy effect
         const highlightGradient = ctx.createRadialGradient(
-          tokenX - TOKEN_RADIUS * 0.4,
-          tokenY - TOKEN_RADIUS * 0.4,
+          tokenX - scaledRadius * 0.4,
+          tokenY - scaledRadius * 0.4,
           0,
-          tokenX - TOKEN_RADIUS * 0.4,
-          tokenY - TOKEN_RADIUS * 0.4,
-          TOKEN_RADIUS * 0.6
+          tokenX - scaledRadius * 0.4,
+          tokenY - scaledRadius * 0.4,
+          scaledRadius * 0.6
         );
         highlightGradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
         highlightGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.3)');
         highlightGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
         ctx.fillStyle = highlightGradient;
         ctx.beginPath();
-        ctx.arc(tokenX - TOKEN_RADIUS * 0.2, tokenY - TOKEN_RADIUS * 0.2, TOKEN_RADIUS * 0.5, 0, Math.PI * 2);
+        ctx.arc(tokenX - scaledRadius * 0.2, tokenY - scaledRadius * 0.2, scaledRadius * 0.5, 0, Math.PI * 2);
         ctx.fill();
 
         // Outer border with gradient
         const borderGradient = ctx.createLinearGradient(
-          tokenX, tokenY - TOKEN_RADIUS,
-          tokenX, tokenY + TOKEN_RADIUS
+          tokenX, tokenY - scaledRadius,
+          tokenX, tokenY + scaledRadius
         );
         borderGradient.addColorStop(0, 'rgba(255, 255, 255, 0.5)');
         borderGradient.addColorStop(0.5, 'rgba(0, 0, 0, 0.3)');
@@ -521,19 +531,19 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
         ctx.strokeStyle = borderGradient;
         ctx.lineWidth = 3;
         ctx.beginPath();
-        ctx.arc(tokenX, tokenY, TOKEN_RADIUS, 0, Math.PI * 2);
+        ctx.arc(tokenX, tokenY, scaledRadius, 0, Math.PI * 2);
         ctx.stroke();
         
         // Inner ring for extra detail
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
         ctx.lineWidth = 1.5;
         ctx.beginPath();
-        ctx.arc(tokenX, tokenY, TOKEN_RADIUS - 3, 0, Math.PI * 2);
+        ctx.arc(tokenX, tokenY, scaledRadius - 3, 0, Math.PI * 2);
         ctx.stroke();
         
-        // Animated glow during movement
+        // Animated glow during movement - matching homepage style
         if (animation && animation.path && animation.currentStep < animation.path.length - 1) {
-          const pulseSize = TOKEN_RADIUS + 12 + Math.sin(animation.stepProgress * Math.PI * 4) * 4;
+          const pulseSize = scaledRadius + 12 + Math.sin(animation.stepProgress * Math.PI * 4) * 4;
           ctx.strokeStyle = colors[0];
           ctx.lineWidth = 3;
           ctx.globalAlpha = 0.6;
@@ -541,6 +551,16 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
           ctx.arc(tokenX, tokenY, pulseSize, 0, Math.PI * 2);
           ctx.stroke();
           ctx.globalAlpha = 1;
+          
+          // Add extra glow effect during movement
+          const glowGradient2 = ctx.createRadialGradient(tokenX, tokenY, scaledRadius * 0.5, tokenX, tokenY, scaledRadius + 12);
+          glowGradient2.addColorStop(0, `${colors[0]}00`);
+          glowGradient2.addColorStop(0.7, `${colors[0]}60`);
+          glowGradient2.addColorStop(1, `${colors[0]}00`);
+          ctx.fillStyle = glowGradient2;
+          ctx.beginPath();
+          ctx.arc(tokenX, tokenY, scaledRadius + 10, 0, Math.PI * 2);
+          ctx.fill();
         }
 
         // Highlight available moves with pulsing ring - ONLY for current player's tokens
@@ -710,18 +730,27 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     const animate = () => {
       drawBoard(ctx);
       drawTokens(ctx);
-      
-      // Update animations
+      animationFrameRef.current = requestAnimationFrame(animate);
+    };
+    
+    // Always draw the board
+    drawBoard(ctx);
+    drawTokens(ctx);
+    
+    // Start continuous animation loop for smooth 60fps rendering
+    animationFrameRef.current = requestAnimationFrame(animate);
+    
+    // Separate interval for updating animation progress - EXACT MATCH TO HOMEPAGE
+    const progressInterval = setInterval(() => {
       setAnimatingTokens(prev => {
         const updated = { ...prev };
-        let hasActiveAnimations = false;
         
         Object.keys(updated).forEach(key => {
           const anim = updated[key];
           
           if (anim.path) {
-            // Step-by-step animation
-            anim.stepProgress += 0.04; // Speed per cell (0.04 = slower, more visible movement)
+            // Step-by-step animation - EXACT MATCH TO HOMEPAGE (0.08 speed per 50ms)
+            anim.stepProgress += 0.08;
             
             if (anim.stepProgress >= 1) {
               // Move to next cell
@@ -732,37 +761,20 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
                 // Animation complete
                 console.log(`✅ Animation complete: ${key} walked through ${anim.path.length} cells`);
                 delete updated[key];
-              } else {
-                hasActiveAnimations = true;
               }
-            } else {
-              hasActiveAnimations = true;
             }
           }
         });
         
-        if (hasActiveAnimations) {
-          animationFrameRef.current = requestAnimationFrame(animate);
-        }
-        
         return updated;
       });
-    };
-    
-    // Always draw the board
-    drawBoard(ctx);
-    drawTokens(ctx);
-    
-    // Start animation loop if there are animating tokens
-    if (Object.keys(animatingTokens).length > 0) {
-      console.log('🎬 Animation loop started');
-      animationFrameRef.current = requestAnimationFrame(animate);
-    }
+    }, 50); // Update every 50ms - EXACT MATCH TO HOMEPAGE
     
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
+      clearInterval(progressInterval);
     };
   }, [gameState, availableMoves, animatingTokens]);
 
@@ -836,7 +848,7 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
     <div className="w-full flex flex-col items-center justify-center">
       {/* Version indicator */}
       <div className="mb-4 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-bold text-sm shadow-lg">
-        Board Version: 5.11.0 - Smart Token Glow ✨
+        Board Version: 5.12.0 - Smooth Animation ✨
       </div>
       
       <div className="relative bg-white rounded-xl shadow-2xl overflow-hidden border-4 border-black">

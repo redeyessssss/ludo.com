@@ -30,7 +30,7 @@
 //    - First player to get all 4 tokens to finish wins
 //    - Tokens must complete full circuit + home path
 //
-const COLORS = ['red', 'green', 'yellow', 'blue'];
+const COLORS = ['red', 'green', 'blue', 'yellow'];  // Fixed order to match board layout
 const TOKENS_PER_PLAYER = 4;
 const MAIN_PATH_LENGTH = 52;
 const HOME_PATH_LENGTH = 6;
@@ -365,6 +365,10 @@ class LudoGameEngine {
 
   getCurrentPlayer() {
     return this.players[this.currentPlayerIndex];
+  }
+
+  getPlayerConfig(color) {
+    return PLAYER_CONFIG[color];
   }
 
   getAvailableMoves(playerId) {
