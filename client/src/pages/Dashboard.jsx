@@ -15,6 +15,8 @@ export default function Dashboard() {
   const [connectionStatus, setConnectionStatus] = useState('connecting');
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [inviteCode, setInviteCode] = useState('');
+  const [showBotModal, setShowBotModal] = useState(false);
+  const [selectedPlayerCount, setSelectedPlayerCount] = useState(2);
 
   useEffect(() => {
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -63,6 +65,11 @@ export default function Dashboard() {
       console.log('Match found!', data);
       setSearching(false);
       navigate(`/lobby/${data.roomId}`);
+    });
+
+    newSocket.on('bot:gameCreated', (data) => {
+      console.log('✅ Bot game created, navigating to game:', data.gameId);
+      navigate(`/game/${data.gameId}`);
     });
 
     return () => newSocket.close();
@@ -132,6 +139,22 @@ export default function Dashboard() {
     setSearching(false);
     setSearchMode('');
     setQueuePosition(0);
+  };
+
+  const handleBotPlay = () => {
+    setShowBotModal(true);
+  };
+
+  const startBotGame = () => {
+    if (socket && user) {
+      console.log(`🎮 Starting bot game with ${selectedPlayerCount} total players`);
+      console.log(`📤 Sending bot:createGame event with playerCount: ${selectedPlayerCount}`);
+      socket.emit('bot:createGame', { 
+        userId: user.id, 
+        playerCount: selectedPlayerCount 
+      });
+      setShowBotModal(false);
+    }
   };
 
   return (
@@ -247,6 +270,61 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* Play with Bot Modal */}
+        {showBotModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="card max-w-md w-full">
+              <div className="text-center mb-6">
+                <div className="text-5xl mb-4">🤖</div>
+                <h2 className="text-2xl font-bold mb-2">Play with Bot</h2>
+                <p className="text-gray-600">Select number of players (including you)</p>
+              </div>
+              
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                  Number of Players
+                </label>
+                <div className="grid grid-cols-3 gap-3">
+                  {[2, 3, 4].map((count) => (
+                    <button
+                      key={count}
+                      onClick={() => setSelectedPlayerCount(count)}
+                      className={`p-4 rounded-lg border-2 transition-all ${
+                        selectedPlayerCount === count
+                          ? 'border-primary bg-blue-50 scale-105'
+                          : 'border-gray-300 hover:border-gray-400'
+                      }`}
+                    >
+                      <div className="text-3xl font-bold">{count}</div>
+                      <div className="text-xs text-gray-600 mt-1">
+                        {count === 2 ? '1 Bot' : count === 3 ? '2 Bots' : '3 Bots'}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-3 text-center">
+                  You will always be Red and go first
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowBotModal(false)}
+                  className="btn-secondary flex-1"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={startBotGame}
+                  className="btn-primary flex-1"
+                >
+                  Start Game
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="card mb-8">
           <div className="flex justify-between items-center">
             <div>
@@ -291,12 +369,20 @@ export default function Dashboard() {
             )}
           </button>
 
+          <button onClick={handleBotPlay} className="card hover:shadow-2xl transition-all cursor-pointer">
+            <div className="text-5xl mb-4">🤖</div>
+            <h3 className="text-2xl font-bold mb-2">Play with Bot</h3>
+            <p className="text-gray-600">Practice against AI</p>
+          </button>
+
           <button onClick={handleCreatePrivate} className="card hover:shadow-2xl transition-all cursor-pointer">
             <div className="text-5xl mb-4">🔒</div>
             <h3 className="text-2xl font-bold mb-2">Create Room</h3>
             <p className="text-gray-600">Host a private game</p>
           </button>
+        </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <button onClick={handleJoinPrivate} className="card hover:shadow-2xl transition-all cursor-pointer">
             <div className="text-5xl mb-4">🔑</div>
             <h3 className="text-2xl font-bold mb-2">Join Room</h3>

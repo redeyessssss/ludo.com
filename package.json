@@ -1,7 +1,7 @@
 {
   "name": "ludo-multiplayer",
-  "version": "7.3.5",
-  "description": "Multiplayer Ludo game - Fixed API URL for production deployment",
+  "version": "7.3.6",
+  "description": "Multiplayer Ludo game - Re-added Play with Bot feature to Dashboard",
   "scripts": {
     "dev": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
     "dev:client": "vite",
