@@ -1,7 +1,7 @@
 {
   "name": "ludo-multiplayer",
-  "version": "8.1.0",
-  "description": "Multiplayer Ludo game - Integrated themes, sounds, emotes, and celebrations into gameplay",
+  "version": "8.2.0",
+  "description": "Multiplayer Ludo game - Beautiful redesigned Dashboard with glassmorphism and animations",
   "scripts": {
     "dev": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
     "dev:client": "vite",
