@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useState } from 'react';
+import SettingsModal from './SettingsModal';
 
 export default function Navbar() {
   const { user, logout } = useAuthStore();
   const [showMenu, setShowMenu] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   return (
     <nav className="bg-white shadow-lg sticky top-0 z-50 animate-slide-in-left">
@@ -36,6 +38,13 @@ export default function Navbar() {
           <div className="flex items-center space-x-4">
             {user ? (
               <>
+                <button
+                  onClick={() => setShowSettings(true)}
+                  className="text-2xl hover:scale-110 transition-transform duration-200"
+                  title="Settings"
+                >
+                  ⚙️
+                </button>
                 <Link 
                   to={`/profile/${user.id}`} 
                   className="flex items-center space-x-2 hover:scale-105 transition-transform duration-200"
@@ -68,6 +77,8 @@ export default function Navbar() {
           </div>
         </div>
       </div>
+      
+      <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
     </nav>
   );
 }

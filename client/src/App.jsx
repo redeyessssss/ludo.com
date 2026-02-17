@@ -1,5 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { useAuthStore } from './store/authStore';
+import { useThemeStore } from './store/themeStore';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -12,6 +14,11 @@ import Lobby from './pages/Lobby';
 
 function App() {
   const { user } = useAuthStore();
+  const { hydrate } = useThemeStore();
+
+  useEffect(() => {
+    hydrate();
+  }, [hydrate]);
 
   return (
     <Router>

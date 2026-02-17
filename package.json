@@ -1,7 +1,7 @@
 {
   "name": "ludo-multiplayer",
-  "version": "7.3.6",
-  "description": "Multiplayer Ludo game - Re-added Play with Bot feature to Dashboard",
+  "version": "8.0.0",
+  "description": "Multiplayer Ludo game - Added themes, token skins, sounds, celebrations, and emotes",
   "scripts": {
     "dev": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
     "dev:client": "vite",
