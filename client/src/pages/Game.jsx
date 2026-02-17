@@ -2,8 +2,12 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useGameStore } from '../store/gameStore';
+import { useThemeStore } from '../store/themeStore';
+import { soundManager } from '../utils/soundManager';
 import { io } from 'socket.io-client';
 import LudoBoard from '../game/LudoBoard';
+import EmotePanel, { EmoteDisplay } from '../components/EmotePanel';
+import { Confetti, Fireworks, CaptureEffect } from '../components/CelebrationEffects';
 
 export default function Game() {
   const { gameId } = useParams();
@@ -11,6 +15,7 @@ export default function Game() {
   const navigate = useNavigate();
   const [socket, setSocket] = useState(null);
   const { gameState, setGameState, diceValue, setDiceValue } = useGameStore();
+  const { soundEnabled } = useThemeStore();
   const [rolling, setRolling] = useState(false);
   const [chatMessages, setChatMessages] = useState([]);
   const [message, setMessage] = useState('');
@@ -20,6 +25,14 @@ export default function Game() {
   const [availableMoves, setAvailableMoves] = useState([]);
   const [lastAction, setLastAction] = useState(null);
   const [showFireworks, setShowFireworks] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [captureEffect, setCaptureEffect] = useState(null);
+  const [currentEmote, setCurrentEmote] = useState(null);
+
+  // Update sound manager when settings change
+  useEffect(() => {
+    soundManager.setEnabled(soundEnabled);
+  }, [soundEnabled]);
 
   useEffect(() => {
     if (!user) {
@@ -127,14 +140,18 @@ export default function Game() {
         if (data.tokenFinished === true) {
           console.log('🎆 FIREWORKS TRIGGERED! Token reached home!');
           setShowFireworks(true);
+          setShowConfetti(true);
+          soundManager.playTokenFinish();
           setLastAction('🎉🎆 TOKEN REACHED HOME! 🎆🎉');
           setTimeout(() => {
             console.log('🎆 Fireworks ended');
             setShowFireworks(false);
+            setShowConfetti(false);
           }, 4000);
         }
         // Show move feedback
         else if (data.captured && data.captured.length > 0) {
+          soundManager.playCapture();
           setLastAction(`🎯 Captured ${data.captured.length} token(s)! Extra turn!`);
         } else if (data.extraTurn) {
           setLastAction('🎉 Extra turn! Roll again!');
@@ -147,6 +164,9 @@ export default function Game() {
     newSocket.on('game:end', (data) => {
       setWinner(data.winner);
       setShowWinAnimation(true);
+      setShowFireworks(true);
+      setShowConfetti(true);
+      soundManager.playWin();
       
       const isRanked = data.isRanked;
       const ratingChanges = data.ratingChanges || {};
@@ -167,6 +187,11 @@ export default function Game() {
         alert(message);
         navigate('/dashboard');
       }, 2000);
+    });
+
+    newSocket.on('game:emote', (data) => {
+      setCurrentEmote(data);
+      setTimeout(() => setCurrentEmote(null), 3000);
     });
 
     newSocket.on('chat:message', (data) => {
@@ -204,6 +229,9 @@ export default function Game() {
     setRolling(true);
     setShowDiceAnimation(true);
     
+    // Play dice roll sound
+    soundManager.playDiceRoll();
+    
     socket.emit('game:rollDice', { gameId, userId: user.id });
     
     setTimeout(() => setRolling(false), 1000);
@@ -211,7 +239,16 @@ export default function Game() {
 
   const handleTokenClick = (tokenId) => {
     if (!socket || gameState?.currentPlayer?.id !== user.id) return;
+    
+    // Play token move sound
+    soundManager.playTokenMove();
+    
     socket.emit('game:moveToken', { gameId, userId: user.id, tokenId });
+  };
+
+  const handleEmote = (emote) => {
+    if (!socket) return;
+    socket.emit('game:emote', { gameId, userId: user.id, emote });
   };
 
   const handleSendMessage = () => {
@@ -242,6 +279,17 @@ export default function Game() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 p-4 md:p-8">
+      {/* Celebration Effects */}
+      {showConfetti && <Confetti duration={4000} />}
+      {showFireworks && <Fireworks duration={4000} />}
+      {currentEmote && (
+        <EmoteDisplay 
+          emote={currentEmote.emote} 
+          playerName={currentEmote.playerName} 
+          playerColor={currentEmote.playerColor} 
+        />
+      )}
+      
       {/* Header */}
       <div className="max-w-7xl mx-auto mb-4 md:mb-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 md:gap-6 mb-4 md:mb-6 animate-fade-in-up">
@@ -252,12 +300,18 @@ export default function Game() {
             </h1>
             <p className="text-sm md:text-base text-blue-200">Current Player: <span className="font-bold text-white">{gameState?.currentPlayer?.username}</span></p>
           </div>
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="px-4 md:px-6 py-2 md:py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-lg transition-all duration-300 hover:scale-105 active:scale-95 text-sm md:text-base w-full sm:w-auto"
-          >
-            ← Back
-          </button>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <EmotePanel 
+              onEmote={handleEmote} 
+              playerColor={gameState?.players?.find(p => p.id === user.id)?.color}
+            />
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="px-4 md:px-6 py-2 md:py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-lg transition-all duration-300 hover:scale-105 active:scale-95 text-sm md:text-base flex-1 sm:flex-none"
+            >
+              ← Back
+            </button>
+          </div>
         </div>
 
         {/* Main Game Container */}

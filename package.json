@@ -1,7 +1,7 @@
 {
   "name": "ludo-multiplayer",
-  "version": "8.0.0",
-  "description": "Multiplayer Ludo game - Added themes, token skins, sounds, celebrations, and emotes",
+  "version": "8.1.0",
+  "description": "Multiplayer Ludo game - Integrated themes, sounds, emotes, and celebrations into gameplay",
   "scripts": {
     "dev": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
     "dev:client": "vite",

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import { useThemeStore } from '../store/themeStore';
 
-// VERSION 5.12.0 - Enhanced token animation matching homepage (smooth bounce, extra glow)
+// VERSION 8.1.0 - Integrated themes and token skins
 // CONSTANTS & CONFIG
 const MAIN_PATH_LENGTH = 52;
 const SAFE_CELLS = [0, 8, 13, 21, 26, 34, 39, 47]; // Safe spots: starting positions + star positions
@@ -27,24 +28,60 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
   const [animatingTokens, setAnimatingTokens] = useState({});
   const animationFrameRef = useRef(null);
   const previousGameStateRef = useRef(null);
+  
+  // Get theme and token skin from store
+  const { boardTheme, tokenSkin, themes, tokenSkins } = useThemeStore();
+  const currentTheme = themes[boardTheme];
+  const currentTokenSkin = tokenSkins[tokenSkin];
 
   const BOARD_SIZE = 900;
   const CELL_SIZE = 60;
   const TOKEN_RADIUS = 22;
   
-  // EXACT colors from reference image
-  const COLORS = {
-    red: '#E53935',        // Bright red
-    green: '#43A047',      // Bright green
-    blue: '#1E88E5',       // Bright blue
-    yellow: '#FDD835',     // Bright yellow
-    white: '#FFFFFF',      // Pure white
-    black: '#000000',      // Black for lines
-    tokenRed: '#D32F2F',
-    tokenGreen: '#388E3C',
-    tokenBlue: '#1976D2',
-    tokenYellow: '#F9A825',
+  // Theme-aware colors
+  const getThemeColors = () => {
+    const baseColors = {
+      red: '#E53935',
+      green: '#43A047',
+      blue: '#1E88E5',
+      yellow: '#FDD835',
+      white: '#FFFFFF',
+      black: '#000000',
+      tokenRed: '#D32F2F',
+      tokenGreen: '#388E3C',
+      tokenBlue: '#1976D2',
+      tokenYellow: '#F9A825',
+    };
+
+    // Adjust colors based on theme
+    if (boardTheme === 'neon') {
+      return {
+        ...baseColors,
+        red: '#FF1744',
+        green: '#00E676',
+        blue: '#2979FF',
+        yellow: '#FFEA00',
+        white: '#1A1A1A',
+        black: '#00FFFF',
+      };
+    } else if (boardTheme === 'dark') {
+      return {
+        ...baseColors,
+        white: '#2D2D2D',
+        black: '#CCCCCC',
+      };
+    } else if (boardTheme === 'wood') {
+      return {
+        ...baseColors,
+        white: '#D7CCC8',
+        black: '#4E342E',
+      };
+    }
+    
+    return baseColors;
   };
+  
+  const COLORS = getThemeColors();
 
   // Get the 52-cell main path following traditional Ludo clockwise pattern
   // All colors follow the same pattern, just starting from different positions
@@ -540,6 +577,15 @@ export default function LudoBoard({ gameState, onTokenClick, currentUserId, avai
         ctx.beginPath();
         ctx.arc(tokenX, tokenY, scaledRadius - 3, 0, Math.PI * 2);
         ctx.stroke();
+        
+        // Draw emoji if using emoji/animal/shape skins
+        if (tokenSkin !== 'default') {
+          const emoji = currentTokenSkin[color];
+          ctx.font = `${scaledRadius * 1.5}px Arial`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(emoji, tokenX, tokenY);
+        }
         
         // Animated glow during movement - matching homepage style
         if (animation && animation.path && animation.currentStep < animation.path.length - 1) {

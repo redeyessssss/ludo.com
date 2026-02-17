@@ -1031,6 +1031,23 @@ function setupSocketHandlers(io, usersMap) {
       
       console.log(`Total online players: ${onlineUsers.size}`);
     });
+
+    // Handle emotes
+    socket.on('game:emote', ({ gameId, userId, emote }) => {
+      const game = games.get(gameId);
+      if (!game) return;
+
+      const player = game.players.find(p => p.id === userId);
+      if (!player) return;
+
+      // Broadcast emote to all players in the game
+      io.to(gameId).emit('game:emote', {
+        emote,
+        playerName: player.username,
+        playerColor: player.color,
+        playerId: userId,
+      });
+    });
   });
 }
 
