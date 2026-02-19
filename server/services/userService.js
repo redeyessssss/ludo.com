@@ -7,6 +7,7 @@ const inMemoryUsers = new Map();
 class UserService {
   constructor() {
     this.useFirebase = isInitialized;
+    this.users = inMemoryUsers; // Expose for backward compatibility
     console.log(`UserService using: ${this.useFirebase ? 'Firebase' : 'In-Memory'} storage`);
   }
 
@@ -155,9 +156,6 @@ class UserService {
 
   // Get all users (for in-memory compatibility)
   getAllUsers() {
-    if (this.useFirebase) {
-      throw new Error('Use specific queries instead of getAllUsers with Firebase');
-    }
     return inMemoryUsers;
   }
 }

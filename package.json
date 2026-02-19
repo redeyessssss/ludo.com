@@ -1,7 +1,7 @@
 {
   "name": "ludo-multiplayer",
-  "version": "9.0.0",
-  "description": "Multiplayer Ludo game - Firebase integration with Firestore and Authentication",
+  "version": "9.0.1",
+  "description": "Multiplayer Ludo game - Fixed Firebase integration and auth routes",
   "scripts": {
     "dev": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
     "dev:client": "vite",

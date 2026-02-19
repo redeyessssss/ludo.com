@@ -180,8 +180,10 @@ const handleBotTurn = async (gameId, io, games) => {
   }
 };
 
-function setupSocketHandlers(io, usersMap) {
-  const users = usersMap || new Map();
+function setupSocketHandlers(io) {
+  const userService = require('../services/userService');
+  const users = userService.getAllUsers(); // Get in-memory users map for compatibility
+  
   io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
 
