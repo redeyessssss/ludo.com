@@ -2,12 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-
-// In-memory user storage (replace with database)
-const users = new Map();
-
-// Export users map for use in other modules
-router.users = users;
+const userService = require('../services/userService');
 
 // Register
 router.post('/register', async (req, res) => {
@@ -20,39 +15,22 @@ router.post('/register', async (req, res) => {
     }
 
     // Check if user exists
-    const existingUser = Array.from(users.values()).find(
-      u => u.email === email || u.username === username
-    );
+    const existingEmail = await userService.getUserByEmail(email);
+    const existingUsername = await userService.getUserByUsername(username);
 
-    if (existingUser) {
+    if (existingEmail || existingUsername) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user with all profile fields
-    const userId = `user_${Date.now()}`;
-    const user = {
-      id: userId,
+    // Create user
+    const user = await userService.createUser({
       username,
       email,
       password: hashedPassword,
-      rating: 1000,
-      highestRating: 1000,
-      level: 1,
-      gamesPlayed: 0,
-      wins: 0,
-      losses: 0,
-      tokensCaptured: 0,
-      tokensFinished: 0,
-      matchHistory: [],
-      avatar: '/default-avatar.png',
-      bio: '',
-      createdAt: Date.now(),
-    };
-
-    users.set(userId, user);
+    });
 
     // Generate token
     const token = jwt.sign(
@@ -85,7 +63,7 @@ router.post('/login', async (req, res) => {
     }
 
     // Find user
-    const user = Array.from(users.values()).find(u => u.email === email);
+    const user = await userService.getUserByEmail(email);
 
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
@@ -97,6 +75,9 @@ router.post('/login', async (req, res) => {
     if (!isValidPassword) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
+
+    // Update last login
+    await userService.updateUser(user.id, { lastLogin: Date.now() });
 
     // Generate token
     const token = jwt.sign(
@@ -119,7 +100,7 @@ router.post('/login', async (req, res) => {
 });
 
 // Get current user
-router.get('/me', (req, res) => {
+router.get('/me', async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
 
@@ -128,7 +109,7 @@ router.get('/me', (req, res) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-    const user = users.get(decoded.userId);
+    const user = await userService.getUserById(decoded.userId);
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
