@@ -337,7 +337,7 @@ export default function Game() {
                   </div>
                 )}
 
-                {/* Board with Dice positioned at center */}
+                {/* Board with Dice - Mobile: dice below board, Desktop: dice at center */}
                 <div className="relative">
                   <LudoBoard
                     gameState={gameState}
@@ -347,12 +347,12 @@ export default function Game() {
                     availableMoves={availableMoves}
                   />
                   
-                  {/* Dice positioned at center of board */}
-                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+                  {/* Dice positioned at center of board - DESKTOP ONLY */}
+                  <div className="hidden md:block absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
                     <div className="flex flex-col items-center gap-3 pointer-events-auto">
                       {/* Dice Display with player color */}
                       <div
-                        className={`w-20 h-20 md:w-24 md:h-24 bg-gradient-to-br ${diceColor} rounded-2xl shadow-2xl flex items-center justify-center text-4xl md:text-6xl font-bold text-white cursor-pointer transition-all duration-300 border-4 border-white ${
+                        className={`w-24 h-24 bg-gradient-to-br ${diceColor} rounded-2xl shadow-2xl flex items-center justify-center text-6xl font-bold text-white cursor-pointer transition-all duration-300 border-4 border-white ${
                           showDiceAnimation ? 'animate-dice-roll' : ''
                         } ${isCurrentPlayer ? 'hover:scale-110 hover:shadow-3xl' : 'opacity-70'}`}
                         onClick={handleRollDice}
@@ -376,6 +376,34 @@ export default function Game() {
                       )}
                     </div>
                   </div>
+                </div>
+
+                {/* Dice Controls - MOBILE ONLY (below board) */}
+                <div className="md:hidden mt-4 flex flex-col items-center gap-3">
+                  {/* Dice Display with player color */}
+                  <div
+                    className={`w-20 h-20 bg-gradient-to-br ${diceColor} rounded-2xl shadow-2xl flex items-center justify-center text-5xl font-bold text-white cursor-pointer transition-all duration-300 border-4 border-white ${
+                      showDiceAnimation ? 'animate-dice-roll' : ''
+                    } ${isCurrentPlayer ? 'active:scale-95' : 'opacity-70'}`}
+                    onClick={handleRollDice}
+                  >
+                    {diceValue || '🎲'}
+                  </div>
+
+                  {/* Roll Button */}
+                  {isCurrentPlayer && (
+                    <button
+                      onClick={handleRollDice}
+                      disabled={rolling || availableMoves.length > 0}
+                      className={`px-6 py-3 rounded-lg font-bold text-base transition-all duration-300 transform w-full max-w-xs ${
+                        !rolling && availableMoves.length === 0
+                          ? 'bg-gradient-to-r from-green-400 to-green-600 text-white active:scale-95 shadow-lg'
+                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      }`}
+                    >
+                      {rolling ? 'Rolling...' : availableMoves.length > 0 ? 'Move Token' : 'Roll Dice'}
+                    </button>
+                  )}
                 </div>
 
                 {/* Instructions below board */}
