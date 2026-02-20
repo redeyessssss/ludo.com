@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { auth, db } from '../config/firebase';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 
 export default function Register() {
   const [username, setUsername] = useState('');
@@ -17,23 +20,53 @@ export default function Register() {
     setLoading(true);
 
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      const response = await fetch(`${API_URL}/api/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, email, password }),
+      // Create user with Firebase Authentication
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
+
+      // Update display name
+      await updateProfile(firebaseUser, {
+        displayName: username
       });
 
-      const data = await response.json();
+      // Create user document in Firestore
+      const userData = {
+        id: firebaseUser.uid,
+        username,
+        email: firebaseUser.email,
+        rating: 1000,
+        highestRating: 1000,
+        level: 1,
+        gamesPlayed: 0,
+        wins: 0,
+        losses: 0,
+        tokensCaptured: 0,
+        tokensFinished: 0,
+        matchHistory: [],
+        avatar: '/default-avatar.png',
+        bio: '',
+        createdAt: Date.now(),
+        lastLogin: Date.now(),
+      };
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
-      }
+      await setDoc(doc(db, 'users', firebaseUser.uid), userData);
 
-      setUser(data.user, data.token);
+      // Get Firebase ID token
+      const token = await firebaseUser.getIdToken();
+
+      setUser(userData, token);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message);
+      console.error('Register error:', err);
+      if (err.code === 'auth/email-already-in-use') {
+        setError('Email already in use');
+      } else if (err.code === 'auth/weak-password') {
+        setError('Password should be at least 6 characters');
+      } else if (err.code === 'auth/invalid-email') {
+        setError('Invalid email address');
+      } else {
+        setError(err.message || 'Registration failed');
+      }
     } finally {
       setLoading(false);
     }

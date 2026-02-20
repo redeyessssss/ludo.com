@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { auth } from '../config/firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -16,23 +18,40 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      const response = await fetch(`${API_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+      // Sign in with Firebase Authentication
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
 
-      const data = await response.json();
+      // Create user object for the app
+      const user = {
+        id: firebaseUser.uid,
+        email: firebaseUser.email,
+        username: firebaseUser.displayName || firebaseUser.email.split('@')[0],
+        rating: 1000,
+        level: 1,
+        gamesPlayed: 0,
+        wins: 0,
+        losses: 0,
+      };
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
-      }
+      // Get Firebase ID token for backend authentication
+      const token = await firebaseUser.getIdToken();
 
-      setUser(data.user, data.token);
+      setUser(user, token);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message);
+      console.error('Login error:', err);
+      if (err.code === 'auth/user-not-found') {
+        setError('No account found with this email');
+      } else if (err.code === 'auth/wrong-password') {
+        setError('Incorrect password');
+      } else if (err.code === 'auth/invalid-email') {
+        setError('Invalid email address');
+      } else if (err.code === 'auth/invalid-credential') {
+        setError('Invalid email or password');
+      } else {
+        setError(err.message || 'Login failed');
+      }
     } finally {
       setLoading(false);
     }

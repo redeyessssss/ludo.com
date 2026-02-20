@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { auth } from '../config/firebase';
+import { signOut } from 'firebase/auth';
 
 export const useAuthStore = create((set) => ({
   user: null,
@@ -9,7 +11,12 @@ export const useAuthStore = create((set) => ({
       localStorage.setItem('auth-storage', JSON.stringify({ user, token }));
     }
   },
-  logout: () => {
+  logout: async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
     set({ user: null, token: null });
     if (typeof window !== 'undefined') {
       localStorage.removeItem('auth-storage');

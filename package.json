@@ -1,7 +1,7 @@
 {
   "name": "ludo-multiplayer",
-  "version": "9.0.2",
-  "description": "Multiplayer Ludo game - Fixed mobile responsive: dice controls below board",
+  "version": "9.1.0",
+  "description": "Multiplayer Ludo game - Firebase Authentication integrated (email/password)",
   "scripts": {
     "dev": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
     "dev:client": "vite",
